@@ -105,8 +105,7 @@ const parseAttendees = (value: string | null | undefined): string[] => {
 };
 
 const mapExpense = (row: ExpenseCsvRow): ExpenseRecord => ({
-  // timestamp: parseRequired(row.Timestamp, "Timestamp"),
-  timestamp: Date.now().toString(), // Using current time as a placeholder
+  timestamp: parseRequired(row.Timestamp, "Timestamp"),
   merchant: parseRequired(row.Merchant, "Merchant"),
   amount: parseNumber(row.Amount, "Amount"),
   mcc: normalizeString(row.MCC),
@@ -120,12 +119,14 @@ const mapExpense = (row: ExpenseCsvRow): ExpenseRecord => ({
   attendees: parseAttendees(row.Attendees),
 });
 
+const normalizeHeader = (header: string): string => header.replace(/\uFEFF/g, "").trim();
+
 const parseExpensesFile = async (
   filePath: string,
 ): Promise<ExpenseRecord[]> => {
   const records: ExpenseRecord[] = [];
   const parser = parse<ExpenseCsvRow>({
-    columns: true,
+    columns: (headers) => headers.map(normalizeHeader),
     skip_empty_lines: true,
     trim: true,
   });
