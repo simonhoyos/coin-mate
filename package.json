@@ -16,7 +16,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.11.1",
   "dependencies": {
-    "commander": "^14.0.1"
+    "commander": "^14.0.1",
+    "csv-parse": "^6.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
