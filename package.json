@@ -3,11 +3,27 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "check:lint": "eslint --max-warnings 0 \"**/*.{ts,tsx}\"",
+    "check:format": "prettier --check \"**/*.{ts,tsx,md,json}\"",
+    "check:types": "tsc --noEmit",
+    "check:all": "pnpm run check:lint && pnpm run check:format && pnpm run check:types"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.11.1"
+  "packageManager": "pnpm@10.11.1",
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@types/node": "^24.7.2",
+    "eslint": "^9.37.0",
+    "globals": "^16.4.0",
+    "jiti": "^2.6.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0"
+  }
 }
