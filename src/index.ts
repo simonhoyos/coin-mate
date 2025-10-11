@@ -37,6 +37,14 @@ type ExpenseRecord = {
   attendees: string[];
 };
 
+type CategoryReport = {
+  category: string;
+  totalAmount: number;
+  merchants: string[];
+};
+
+type MonthlyReport = Record<string, CategoryReport[]>;
+
 const normalizeString = (value: string | null | undefined): string | null => {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : null;
@@ -121,6 +129,82 @@ const mapExpense = (row: ExpenseCsvRow): ExpenseRecord => ({
 
 const normalizeHeader = (header: string): string => header.replace(/\uFEFF/g, "").trim();
 
+const getMonthKey = (timestamp: string): string => {
+  const normalized = timestamp.replace(/\uFEFF/g, "").trim();
+
+  if (normalized.length === 0) {
+    throw new Error("Timestamp is required");
+  }
+
+  const isoMatch = normalized.match(/^(\d{4})[-/](\d{2})/);
+  if (isoMatch) {
+    const [, year, month] = isoMatch;
+    return `${year}-${month}`;
+  }
+
+  const usMatch = normalized.match(/^(\d{1,2})[/](\d{1,2})[/](\d{2,4})/);
+  if (usMatch) {
+    const monthPart = usMatch[1]!;
+    const yearPart = usMatch[3]!;
+    const fullYear =
+      yearPart.length === 2 ? `20${yearPart}` : yearPart.padStart(4, "0");
+    return `${fullYear}-${String(Number.parseInt(monthPart, 10)).padStart(2, "0")}`;
+  }
+
+  const parsed = new Date(normalized);
+  if (!Number.isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }
+
+  throw new Error(`Unable to parse timestamp: "${timestamp}"`);
+};
+
+const buildMonthlyReport = (records: ExpenseRecord[]): MonthlyReport => {
+  const monthMap = new Map<string, Map<string, { total: number; merchants: Set<string> }>>();
+
+  for (const record of records) {
+    const monthKey = getMonthKey(record.timestamp);
+    const categoryKey = record.category ?? "Uncategorized";
+    const merchant = record.merchant;
+    const monthEntry = monthMap.get(monthKey) ?? new Map();
+    const categoryEntry = monthEntry.get(categoryKey) ?? {
+      total: 0,
+      merchants: new Set<string>(),
+    };
+
+    categoryEntry.total += record.amount;
+    if (merchant) {
+      categoryEntry.merchants.add(merchant);
+    }
+
+    monthEntry.set(categoryKey, categoryEntry);
+    monthMap.set(monthKey, monthEntry);
+  }
+
+  const report: MonthlyReport = {};
+  const sortedMonths = [...monthMap.entries()].sort(([monthA], [monthB]) =>
+    monthA.localeCompare(monthB),
+  );
+
+  for (const [month, categories] of sortedMonths) {
+    const monthCategories: CategoryReport[] = [];
+    for (const [category, { total, merchants }] of categories) {
+      monthCategories.push({
+        category,
+        totalAmount: Number.parseFloat(total.toFixed(2)),
+        merchants: Array.from(merchants).sort((a, b) => a.localeCompare(b)),
+      });
+    }
+
+    monthCategories.sort((a, b) => a.category.localeCompare(b.category));
+    report[month] = monthCategories;
+  }
+
+  return report;
+};
+
 const parseExpensesFile = async (
   filePath: string,
 ): Promise<ExpenseRecord[]> => {
@@ -161,6 +245,21 @@ program
     try {
       const records = await parseExpensesFile(file);
       process.stdout.write(`${JSON.stringify(records, null, 2)}\n`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      program.error(message);
+    }
+  });
+
+program
+  .command("report-expenses")
+  .description("Generate a monthly category report from an expenses CSV file")
+  .argument("<file>", "path to the expenses CSV file")
+  .action(async (file: string) => {
+    try {
+      const records = await parseExpensesFile(file);
+      const report = buildMonthlyReport(records);
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       program.error(message);
