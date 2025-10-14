@@ -16,7 +16,7 @@
     "check:types": "tsc --noEmit",
     "check:all": "pnpm run check:lint && pnpm run check:format && pnpm run check:types"
   },
-  "packageManager": "pnpm@10.11.1",
+  "packageManager": "pnpm@10.18.3",
   "dependencies": {
     "commander": "^14.0.1",
     "csv-parse": "^6.1.0",
