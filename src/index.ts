@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { parse } from "csv-parse";
 import { createReadStream } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { createRequire } from "node:module";
 
@@ -136,7 +137,8 @@ const mapExpense = (row: ExpenseCsvRow): ExpenseRecord => ({
   attendees: parseAttendees(row.Attendees),
 });
 
-const normalizeHeader = (header: string): string => header.replace(/\uFEFF/g, "").trim();
+const normalizeHeader = (header: string): string =>
+  header.replace(/\uFEFF/g, "").trim();
 
 const getMonthKey = (timestamp: string): string => {
   const normalized = timestamp.replace(/\uFEFF/g, "").trim();
@@ -171,7 +173,10 @@ const getMonthKey = (timestamp: string): string => {
 };
 
 const buildMonthlyReport = (records: ExpenseRecord[]): MonthlyReport => {
-  const monthMap = new Map<string, Map<string, { total: number; merchants: Set<string> }>>();
+  const monthMap = new Map<
+    string,
+    Map<string, { total: number; merchants: Set<string> }>
+  >();
 
   for (const record of records) {
     const monthKey = getMonthKey(record.timestamp);
@@ -286,6 +291,52 @@ const buildMonthlyCategoryStats = (
   return report;
 };
 
+const formatAmount = (value: number): string => value.toFixed(2);
+
+const escapeCsvValue = (value: string): string => {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+
+  return value;
+};
+
+const buildMonthlyCategoryStatsCsv = (
+  stats: MonthlyCategoryStatsReport,
+): string => {
+  const allMonths = new Set<string>();
+  for (const entry of stats) {
+    for (const month of Object.keys(entry.monthlyTotals)) {
+      allMonths.add(month);
+    }
+  }
+
+  const months = [...allMonths].sort((a, b) => a.localeCompare(b));
+  const headerCells = [
+    "Category",
+    "Monthly Average Amount",
+    "Monthly Median Amount",
+    ...months,
+  ];
+  const header = headerCells.map(escapeCsvValue).join(",");
+
+  const rows = stats.map((entry) => {
+    const cells: string[] = [
+      entry.category,
+      formatAmount(entry.monthlyAverageAmount),
+      formatAmount(entry.monthlyMedianAmount),
+      ...months.map((month) => {
+        const total = entry.monthlyTotals[month];
+        return total !== undefined ? formatAmount(total) : "";
+      }),
+    ];
+
+    return cells.map(escapeCsvValue).join(",");
+  });
+
+  return [header, ...rows].join("\n");
+};
+
 const parseExpensesFile = async (
   filePath: string,
 ): Promise<ExpenseRecord[]> => {
@@ -353,11 +404,22 @@ program
     "Generate per-category monthly average and median totals from an expenses CSV file",
   )
   .argument("<file>", "path to the expenses CSV file")
-  .action(async (file: string) => {
+  .option("-o, --output <file>", "path to the CSV output file")
+  .action(async (file: string, options: { output?: string }) => {
     try {
+      const outputPath = options.output;
+      if (!outputPath) {
+        program.error(
+          "Output file is required. Use --output <file> to specify it.",
+        );
+        return;
+      }
+
       const records = await parseExpensesFile(file);
       const stats = buildMonthlyCategoryStats(records);
-      process.stdout.write(`${JSON.stringify(stats, null, 2)}\n`);
+      const csv = buildMonthlyCategoryStatsCsv(stats);
+      await writeFile(outputPath, `${csv}\n`, "utf8");
+      process.stdout.write(`Saved category stats CSV to ${outputPath}\n`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       program.error(message);
