@@ -45,6 +45,15 @@ type CategoryReport = {
 
 type MonthlyReport = Record<string, CategoryReport[]>;
 
+type CategoryMonthlyStats = {
+  category: string;
+  monthlyAverageAmount: number;
+  monthlyMedianAmount: number;
+  monthlyTotals: Record<string, number>;
+};
+
+type MonthlyCategoryStatsReport = CategoryMonthlyStats[];
+
 const normalizeString = (value: string | null | undefined): string | null => {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : null;
@@ -205,6 +214,78 @@ const buildMonthlyReport = (records: ExpenseRecord[]): MonthlyReport => {
   return report;
 };
 
+const calculateMedian = (values: number[]): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middleIndex = Math.floor(sorted.length / 2);
+
+  if (sorted.length === 0) {
+    throw new Error("Cannot compute median for an empty dataset");
+  }
+
+  if (sorted.length % 2 === 0) {
+    const lower = sorted[middleIndex - 1];
+    const upper = sorted[middleIndex];
+    if (lower === undefined || upper === undefined) {
+      throw new Error("Cannot compute median for an empty dataset");
+    }
+
+    return (lower + upper) / 2;
+  }
+
+  const median = sorted[middleIndex];
+  if (median === undefined) {
+    throw new Error("Cannot compute median for an empty dataset");
+  }
+
+  return median;
+};
+
+const buildMonthlyCategoryStats = (
+  records: ExpenseRecord[],
+): MonthlyCategoryStatsReport => {
+  const categoryMonthTotals = new Map<string, Map<string, number>>();
+
+  for (const record of records) {
+    const monthKey = getMonthKey(record.timestamp);
+    const categoryKey = record.category ?? "Uncategorized";
+    const monthTotals = categoryMonthTotals.get(categoryKey) ?? new Map();
+    const updatedTotal = (monthTotals.get(monthKey) ?? 0) + record.amount;
+    monthTotals.set(monthKey, updatedTotal);
+    categoryMonthTotals.set(categoryKey, monthTotals);
+  }
+
+  const report: CategoryMonthlyStats[] = [];
+  const sortedCategories = [...categoryMonthTotals.entries()].sort(
+    ([categoryA], [categoryB]) => categoryA.localeCompare(categoryB),
+  );
+
+  for (const [category, monthTotals] of sortedCategories) {
+    const sortedMonths = [...monthTotals.entries()].sort(([monthA], [monthB]) =>
+      monthA.localeCompare(monthB),
+    );
+    const totalsArray = sortedMonths.map(([, total]) => total);
+    if (totalsArray.length === 0) {
+      continue;
+    }
+    const sum = totalsArray.reduce((acc, value) => acc + value, 0);
+    const mean = sum / totalsArray.length;
+    const median = calculateMedian(totalsArray);
+    const monthTotalsRecord: Record<string, number> = {};
+    for (const [month, total] of sortedMonths) {
+      monthTotalsRecord[month] = Number.parseFloat(total.toFixed(2));
+    }
+
+    report.push({
+      category,
+      monthlyAverageAmount: Number.parseFloat(mean.toFixed(2)),
+      monthlyMedianAmount: Number.parseFloat(median.toFixed(2)),
+      monthlyTotals: monthTotalsRecord,
+    });
+  }
+
+  return report;
+};
+
 const parseExpensesFile = async (
   filePath: string,
 ): Promise<ExpenseRecord[]> => {
@@ -260,6 +341,23 @@ program
       const records = await parseExpensesFile(file);
       const report = buildMonthlyReport(records);
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      program.error(message);
+    }
+  });
+
+program
+  .command("report-category-stats")
+  .description(
+    "Generate per-category monthly average and median totals from an expenses CSV file",
+  )
+  .argument("<file>", "path to the expenses CSV file")
+  .action(async (file: string) => {
+    try {
+      const records = await parseExpensesFile(file);
+      const stats = buildMonthlyCategoryStats(records);
+      process.stdout.write(`${JSON.stringify(stats, null, 2)}\n`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       program.error(message);
