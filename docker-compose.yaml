@@ -1,0 +1,19 @@
+services:
+  db:
+    image: cockroachdb/cockroach:latest-v24.1
+    restart: always
+    command: start-single-node --insecure
+    ports:
+      - 26257:26257
+      - 8080:8080
+    volumes:
+      - coin_mate_data:/cockroach/cockroach-data
+
+volumes:
+  coin_mate_data:
+    name: coin_mate_data
+    driver: local
+    driver_opts:
+      type: none
+      device: ./.data
+      o: bind
