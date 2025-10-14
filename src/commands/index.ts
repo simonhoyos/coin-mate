@@ -1,12 +1,12 @@
-import { createReadStream } from "node:fs";
-import { writeFile } from "node:fs/promises";
-import { createRequire } from "node:module";
-import { pipeline } from "node:stream/promises";
-import { Command } from "commander";
-import { parse } from "csv-parse";
+import { createReadStream } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { pipeline } from 'node:stream/promises';
+import { Command } from 'commander';
+import { parse } from 'csv-parse';
 
 const require = createRequire(import.meta.url);
-const { version } = require("../package.json") as { version: string };
+const { version } = require('../package.json') as { version: string };
 
 type ExpenseCsvRow = {
   Timestamp: string;
@@ -17,8 +17,8 @@ type ExpenseCsvRow = {
   Tag?: string;
   Comment?: string;
   Reimbursable?: string;
-  "Original Currency"?: string;
-  "Original Amount"?: string;
+  'Original Currency'?: string;
+  'Original Amount'?: string;
   Receipt?: string;
   Attendees?: string;
 };
@@ -82,7 +82,7 @@ const parseNumber = (
   const withoutParens = isParenthesizedNegative
     ? trimmed.slice(1, -1)
     : trimmed;
-  const sanitized = withoutParens.replace(/[$,\s]/g, "");
+  const sanitized = withoutParens.replace(/[$,\s]/g, '');
   const parsed = Number.parseFloat(sanitized);
 
   if (Number.isNaN(parsed)) {
@@ -99,11 +99,11 @@ const parseReimbursable = (value: string | null | undefined): boolean => {
   }
 
   const token = normalized.toLowerCase();
-  if (["true", "yes", "y", "1"].includes(token)) {
+  if (['true', 'yes', 'y', '1'].includes(token)) {
     return true;
   }
 
-  if (["false", "no", "n", "0"].includes(token)) {
+  if (['false', 'no', 'n', '0'].includes(token)) {
     return false;
   }
 
@@ -123,28 +123,28 @@ const parseAttendees = (value: string | null | undefined): string[] => {
 };
 
 const mapExpense = (row: ExpenseCsvRow): ExpenseRecord => ({
-  timestamp: parseRequired(row.Timestamp, "Timestamp"),
-  merchant: parseRequired(row.Merchant, "Merchant"),
-  amount: parseNumber(row.Amount, "Amount"),
+  timestamp: parseRequired(row.Timestamp, 'Timestamp'),
+  merchant: parseRequired(row.Merchant, 'Merchant'),
+  amount: parseNumber(row.Amount, 'Amount'),
   mcc: normalizeString(row.MCC),
   category: normalizeString(row.Category),
   tag: normalizeString(row.Tag),
   comment: normalizeString(row.Comment),
   reimbursable: parseReimbursable(row.Reimbursable),
-  originalCurrency: normalizeString(row["Original Currency"]),
-  originalAmount: parseNumber(row["Original Amount"], "Original Amount"),
+  originalCurrency: normalizeString(row['Original Currency']),
+  originalAmount: parseNumber(row['Original Amount'], 'Original Amount'),
   receipt: normalizeString(row.Receipt),
   attendees: parseAttendees(row.Attendees),
 });
 
 const normalizeHeader = (header: string): string =>
-  header.replace(/\uFEFF/g, "").trim();
+  header.replace(/\uFEFF/g, '').trim();
 
 const getMonthKey = (timestamp: string): string => {
-  const normalized = timestamp.replace(/\uFEFF/g, "").trim();
+  const normalized = timestamp.replace(/\uFEFF/g, '').trim();
 
   if (normalized.length === 0) {
-    throw new Error("Timestamp is required");
+    throw new Error('Timestamp is required');
   }
 
   const isoMatch = normalized.match(/^(\d{4})[-/](\d{2})/);
@@ -163,14 +163,14 @@ const getMonthKey = (timestamp: string): string => {
     }
 
     const fullYear =
-      yearPart.length === 2 ? `20${yearPart}` : yearPart.padStart(4, "0");
-    return `${fullYear}-${String(Number.parseInt(monthPart, 10)).padStart(2, "0")}`;
+      yearPart.length === 2 ? `20${yearPart}` : yearPart.padStart(4, '0');
+    return `${fullYear}-${String(Number.parseInt(monthPart, 10)).padStart(2, '0')}`;
   }
 
   const parsed = new Date(normalized);
   if (!Number.isNaN(parsed.getTime())) {
     const year = parsed.getFullYear();
-    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
     return `${year}-${month}`;
   }
 
@@ -185,7 +185,7 @@ const buildMonthlyReport = (records: ExpenseRecord[]): MonthlyReport => {
 
   for (const record of records) {
     const monthKey = getMonthKey(record.timestamp);
-    const categoryKey = record.category ?? "Uncategorized";
+    const categoryKey = record.category ?? 'Uncategorized';
     const merchant = record.merchant;
     const monthEntry = monthMap.get(monthKey) ?? new Map();
     const categoryEntry = monthEntry.get(categoryKey) ?? {
@@ -229,14 +229,14 @@ const calculateMedian = (values: number[]): number => {
   const middleIndex = Math.floor(sorted.length / 2);
 
   if (sorted.length === 0) {
-    throw new Error("Cannot compute median for an empty dataset");
+    throw new Error('Cannot compute median for an empty dataset');
   }
 
   if (sorted.length % 2 === 0) {
     const lower = sorted[middleIndex - 1];
     const upper = sorted[middleIndex];
     if (lower === undefined || upper === undefined) {
-      throw new Error("Cannot compute median for an empty dataset");
+      throw new Error('Cannot compute median for an empty dataset');
     }
 
     return (lower + upper) / 2;
@@ -244,7 +244,7 @@ const calculateMedian = (values: number[]): number => {
 
   const median = sorted[middleIndex];
   if (median === undefined) {
-    throw new Error("Cannot compute median for an empty dataset");
+    throw new Error('Cannot compute median for an empty dataset');
   }
 
   return median;
@@ -257,7 +257,7 @@ const buildMonthlyCategoryStats = (
 
   for (const record of records) {
     const monthKey = getMonthKey(record.timestamp);
-    const categoryKey = record.category ?? "Uncategorized";
+    const categoryKey = record.category ?? 'Uncategorized';
     const monthTotals = categoryMonthTotals.get(categoryKey) ?? new Map();
     const updatedTotal = (monthTotals.get(monthKey) ?? 0) + record.amount;
     monthTotals.set(monthKey, updatedTotal);
@@ -318,12 +318,12 @@ const buildMonthlyCategoryStatsCsv = (
 
   const months = [...allMonths].sort((a, b) => a.localeCompare(b));
   const headerCells = [
-    "Category",
-    "Monthly Average Amount",
-    "Monthly Median Amount",
+    'Category',
+    'Monthly Average Amount',
+    'Monthly Median Amount',
     ...months,
   ];
-  const header = headerCells.map(escapeCsvValue).join(",");
+  const header = headerCells.map(escapeCsvValue).join(',');
 
   const rows = stats.map((entry) => {
     const cells: string[] = [
@@ -332,14 +332,14 @@ const buildMonthlyCategoryStatsCsv = (
       formatAmount(entry.monthlyMedianAmount),
       ...months.map((month) => {
         const total = entry.monthlyTotals[month];
-        return total !== undefined ? formatAmount(total) : "";
+        return total !== undefined ? formatAmount(total) : '';
       }),
     ];
 
-    return cells.map(escapeCsvValue).join(",");
+    return cells.map(escapeCsvValue).join(',');
   });
 
-  return [header, ...rows].join("\n");
+  return [header, ...rows].join('\n');
 };
 
 const parseExpensesFile = async (
@@ -352,7 +352,7 @@ const parseExpensesFile = async (
     trim: true,
   });
 
-  parser.on("data", (row: ExpenseCsvRow) => {
+  parser.on('data', (row: ExpenseCsvRow) => {
     try {
       records.push(mapExpense(row));
     } catch (error) {
@@ -360,7 +360,7 @@ const parseExpensesFile = async (
     }
   });
 
-  await pipeline(createReadStream(filePath, { encoding: "utf8" }), parser);
+  await pipeline(createReadStream(filePath, { encoding: 'utf8' }), parser);
 
   return records;
 };
@@ -368,16 +368,16 @@ const parseExpensesFile = async (
 const program = new Command();
 
 program
-  .name("coin-mate")
-  .description("CLI utilities for the coin-mate project")
+  .name('coin-mate')
+  .description('CLI utilities for the coin-mate project')
   .version(version)
   .showHelpAfterError()
   .showSuggestionAfterError();
 
 program
-  .command("parse-expenses")
-  .description("Parse an expenses CSV and print normalized JSON records")
-  .argument("<file>", "path to the expenses CSV file")
+  .command('parse-expenses')
+  .description('Parse an expenses CSV and print normalized JSON records')
+  .argument('<file>', 'path to the expenses CSV file')
   .action(async (file: string) => {
     try {
       const records = await parseExpensesFile(file);
@@ -389,9 +389,9 @@ program
   });
 
 program
-  .command("report-expenses")
-  .description("Generate a monthly category report from an expenses CSV file")
-  .argument("<file>", "path to the expenses CSV file")
+  .command('report-expenses')
+  .description('Generate a monthly category report from an expenses CSV file')
+  .argument('<file>', 'path to the expenses CSV file')
   .action(async (file: string) => {
     try {
       const records = await parseExpensesFile(file);
@@ -404,18 +404,18 @@ program
   });
 
 program
-  .command("report-category-stats")
+  .command('report-category-stats')
   .description(
-    "Generate per-category monthly average and median totals from an expenses CSV file",
+    'Generate per-category monthly average and median totals from an expenses CSV file',
   )
-  .argument("<file>", "path to the expenses CSV file")
-  .option("-o, --output <file>", "path to the CSV output file")
+  .argument('<file>', 'path to the expenses CSV file')
+  .option('-o, --output <file>', 'path to the CSV output file')
   .action(async (file: string, options: { output?: string }) => {
     try {
       const outputPath = options.output;
       if (!outputPath) {
         program.error(
-          "Output file is required. Use --output <file> to specify it.",
+          'Output file is required. Use --output <file> to specify it.',
         );
         return;
       }
@@ -423,7 +423,7 @@ program
       const records = await parseExpensesFile(file);
       const stats = buildMonthlyCategoryStats(records);
       const csv = buildMonthlyCategoryStatsCsv(stats);
-      await writeFile(outputPath, `${csv}\n`, "utf8");
+      await writeFile(outputPath, `${csv}\n`, 'utf8');
       process.stdout.write(`Saved category stats CSV to ${outputPath}\n`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
