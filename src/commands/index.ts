@@ -1,9 +1,9 @@
-import { Command } from "commander";
-import { parse } from "csv-parse";
 import { createReadStream } from "node:fs";
 import { writeFile } from "node:fs/promises";
-import { pipeline } from "node:stream/promises";
 import { createRequire } from "node:module";
+import { pipeline } from "node:stream/promises";
+import { Command } from "commander";
+import { parse } from "csv-parse";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -155,8 +155,13 @@ const getMonthKey = (timestamp: string): string => {
 
   const usMatch = normalized.match(/^(\d{1,2})[/](\d{1,2})[/](\d{2,4})/);
   if (usMatch) {
-    const monthPart = usMatch[1]!;
-    const yearPart = usMatch[3]!;
+    const monthPart = usMatch[1];
+    const yearPart = usMatch[3];
+
+    if (monthPart == null || yearPart == null) {
+      throw new Error(`Unable to parse timestamp: "${timestamp}"`);
+    }
+
     const fullYear =
       yearPart.length === 2 ? `20${yearPart}` : yearPart.padStart(4, "0");
     return `${fullYear}-${String(Number.parseInt(monthPart, 10)).padStart(2, "0")}`;
