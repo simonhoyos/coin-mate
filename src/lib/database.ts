@@ -1,16 +1,25 @@
-import { Kysely, PostgresDialect } from 'kysely';
-import { Pool } from 'pg';
-import type { Database } from '@/models';
+import knexCreate from 'knex';
 
-const dialect = new PostgresDialect({
-  pool: new Pool({
-    connectionString:
-      process.env.DATABASE_URL ??
-      'postgres://root@localhost:26257/defaultdb?sslmode=disable',
-    max: 5,
-  }),
-});
+// @ts-expect-error - no types support for js modules
+import knexConfig from './knexfile.js';
+import type { IGlobalCache } from './types';
 
-export const db = new Kysely<Database>({
-  dialect,
-});
+export function connect(opts: { globalCache: IGlobalCache }) {
+  const { globalCache } = opts;
+
+  const knex = globalCache.knex ?? knexCreate(knexConfig);
+
+  if (globalCache.knex == null) {
+    globalCache.knex = knex;
+  }
+
+  return {
+    knex: globalCache.knex,
+
+    async cleanup() {
+      await knex.destroy();
+
+      globalCache.knex = undefined;
+    },
+  };
+}

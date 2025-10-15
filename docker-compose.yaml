@@ -1,6 +1,6 @@
 services:
-  db:
-    image: cockroachdb/cockroach:latest-v24.1
+  crdb:
+    image: cockroachdb/cockroach:latest-v25.2
     restart: always
     command: start-single-node --insecure
     ports:
