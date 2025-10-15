@@ -1,7 +1,6 @@
 import knexCreate from 'knex';
 
-// @ts-expect-error - no types support for js modules
-import knexConfig from './knexfile.js';
+import knexConfig from '../../knexfile.js';
 import type { IGlobalCache } from './types';
 
 export function connect(opts: { globalCache: IGlobalCache }) {

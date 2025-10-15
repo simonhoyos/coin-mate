@@ -2,7 +2,7 @@
  * @type { Object.<string, import("knex").Knex.Config> }
  */
 export default {
-  client: 'postgresql',
+  client: 'cockroachdb',
   connection: {
     connectionString: process.env.DATABASE_URL,
   },
