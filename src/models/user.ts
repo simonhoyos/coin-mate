@@ -29,13 +29,16 @@ export class User {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(args.data.password, salt);
 
-    const user = await args.context.services.knex<User>('user').insert(
-      {
-        email: args.data.email,
-        password: hash,
-      },
-      '*',
-    ).first();
+    const user = await args.context.services
+      .knex<User>('user')
+      .insert(
+        {
+          email: args.data.email,
+          password: hash,
+        },
+        '*',
+      )
+      .first();
 
     const token =
       user != null
@@ -60,7 +63,8 @@ export class User {
   }) {
     UserSignInSchema.parse(args.data);
 
-    const user = await args.context.services.knex<User>('user')
+    const user = await args.context.services
+      .knex<User>('user')
       .where('email', args.data.email)
       .limit(1)
       .first();
@@ -104,11 +108,10 @@ const UserSignUpSchema = z
     path: ['confirmPassword'],
   });
 
-const UserSignInSchema = z
-  .object({
-    email: z.email(),
-    password: z.string(),
-  });
+const UserSignInSchema = z.object({
+  email: z.email(),
+  password: z.string(),
+});
 
 function createLoader<V, K = string, C = K>(
   batchFn: (args: { context: IContext; keys: readonly K[] }) => Promise<V[]>,
