@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import Dataloader from 'dataloader';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import type { IContext } from '@/lib/types';
@@ -11,6 +12,13 @@ export class User {
 
   email!: string;
   password!: string;
+
+  static async gen(args: { context: IContext; id: string }) {
+    const record = getUserById({ context: args.context, id: args.id });
+
+    // TODO: authorization checks
+    return record;
+  }
 
   static async create(args: {
     context: IContext;
@@ -57,3 +65,36 @@ const UserCreationSchema = z
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
+
+function createLoader<V, K = string, C = K>(
+  batchFn: (args: { context: IContext; keys: readonly K[] }) => Promise<V[]>,
+  options?: Dataloader.Options<K, V, C>,
+) {
+  const key = Symbol();
+
+  return (args: { context: IContext; id: K }) => {
+    if (args.context.dl.has(key) !== true) {
+      const loader = new Dataloader(
+        (keys: readonly K[]) => batchFn({ context: args.context, keys }),
+        options,
+      );
+
+      args.context.dl.set(key, loader);
+    }
+
+    const loader = args.context.dl.get(key) as Dataloader<K, V>;
+
+    return loader.load(args.id);
+  };
+}
+
+const getUserById = createLoader(
+  async (args: { context: IContext; keys: readonly string[] }) => {
+    const users = (await args.context.services
+      .knex<User>('user')
+      .select(['user.id', 'user.email'])
+      .whereIn('id', args.keys)) as unknown as Pick<User, 'id' | 'email'>[];
+
+    return users;
+  },
+);

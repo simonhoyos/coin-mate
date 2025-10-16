@@ -2,6 +2,7 @@ import { ApolloServer } from '@apollo/server';
 import { ApolloServerPluginLandingPageDisabled } from '@apollo/server/plugin/disabled';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
+import type Dataloader from 'dataloader';
 import type { NextRequest } from 'next/server';
 import { createConfig } from '@/lib/config';
 import { connect } from '@/lib/database';
@@ -45,7 +46,8 @@ const userTypeDefs = `#graphql
 
 const userResolvers = {
   User: {
-    email: (parent: { email?: string }) => parent.email ?? '',
+    email: (parent: { id: string }, _args: never, context: IContext) =>
+      User.gen({ context, id: parent.id }).then((user) => user.email),
   },
 
   Mutation: {
@@ -119,6 +121,8 @@ async function createContext() {
     services: {
       knex: knex,
     },
+
+    dl: new Map<symbol, Dataloader<unknown, unknown>>(),
 
     cleanup,
   };
