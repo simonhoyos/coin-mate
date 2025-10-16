@@ -33,8 +33,13 @@ const userTypeDefs = `#graphql
     confirmPassword: String!
   }
 
+  type UserCreatePayload {
+    user: User
+    token: String
+  }
+
   extend type Mutation {
-    userCreate(input: UserCreateInput!): User!
+    userCreate(input: UserCreateInput!): UserCreatePayload
   }
 `;
 

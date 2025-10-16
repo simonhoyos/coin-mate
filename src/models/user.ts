@@ -1,16 +1,9 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import type { IContext } from '@/lib/types';
 
-interface IUser {
-  id: string;
-
-  created_at: Date | string;
-  updated_at: Date | string;
-  email: string;
-  password: string;
-}
-
-export class User implements IUser {
+export class User {
   id!: string;
 
   created_at!: Date | string;
@@ -25,15 +18,32 @@ export class User implements IUser {
   }) {
     UserCreationSchema.parse(args.data);
 
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(args.data.password, salt);
+
     const [user] = await args.context.services.knex<User>('user').insert(
       {
         email: args.data.email,
-        password: args.data.password,
+        password: hash,
       },
       '*',
     );
 
-    return user;
+    const token =
+      user != null
+        ? jwt.sign(
+            { sub: user.id, iat: Math.floor(Date.now() / 1000) },
+            args.context.config.JWT_SECRET,
+            {
+              expiresIn: '7d',
+            },
+          )
+        : null;
+
+    return {
+      user,
+      token,
+    };
   }
 }
 
