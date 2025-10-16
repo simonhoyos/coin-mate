@@ -1,16 +1,38 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
 
+const SignInFormSchema = z.object({
+  email: z.email('Invalid email address').nonempty('Email is required'),
+  password: z
+    .string('Password is required')
+    .min(8, 'Password should be at least 8 characters')
+    .max(64, 'Password should be at most 64 characters'),
+});
+
 export default function LoginPage() {
+  const form = useForm({
+    resolver: zodResolver(SignInFormSchema),
+  });
+
+  function onSubmit(data: z.infer<typeof SignInFormSchema>) {
+    console.log(data);
+  }
+
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
@@ -24,29 +46,53 @@ export default function LoginPage() {
               <CardTitle className="text-xl">Welcome back</CardTitle>
             </CardHeader>
             <CardContent>
-              <form>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
                 <FieldGroup>
-                  <Field>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="m@example.com"
-                      required
-                    />
-                  </Field>
-                  <Field>
-                    <div className="flex items-center">
-                      <FieldLabel htmlFor="password">Password</FieldLabel>
-                      <Link
-                        href="/password-reset"
-                        className="ml-auto text-sm underline-offset-4 hover:underline"
-                      >
-                        Forgot your password?
-                      </Link>
-                    </div>
-                    <Input id="password" type="password" required />
-                  </Field>
+                  <Controller
+                    name="email"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="email">Email</FieldLabel>
+                        <Input
+                          {...field}
+                          id="email"
+                          aria-invalid={fieldState.invalid}
+                          type="text"
+                          placeholder="m@example.com"
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                  <Controller
+                    name="password"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field>
+                        <div className="flex items-center">
+                          <FieldLabel htmlFor="password">Password</FieldLabel>
+                          <Link
+                            href="/password-reset"
+                            className="ml-auto text-sm underline-offset-4 hover:underline"
+                          >
+                            Forgot your password?
+                          </Link>
+                        </div>
+                        <Input
+                          {...field}
+                          id="password"
+                          aria-invalid={fieldState.invalid}
+                          type="password"
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
                   <Field>
                     <Button type="submit">Login</Button>
                     <FieldDescription className="text-center">
