@@ -21,7 +21,7 @@ export default function LoginPage() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-xl">Welcome back</CardTitle>
+              <CardTitle className="text-xl">Welcome</CardTitle>
             </CardHeader>
             <CardContent>
               <form>
@@ -38,20 +38,22 @@ export default function LoginPage() {
                   <Field>
                     <div className="flex items-center">
                       <FieldLabel htmlFor="password">Password</FieldLabel>
-                      <Link
-                        href="/password-reset"
-                        className="ml-auto text-sm underline-offset-4 hover:underline"
-                      >
-                        Forgot your password?
-                      </Link>
                     </div>
                     <Input id="password" type="password" required />
                   </Field>
                   <Field>
-                    <Button type="submit">Login</Button>
+                    <div className="flex items-center">
+                      <FieldLabel htmlFor="confirmPassword">
+                        Confirm password
+                      </FieldLabel>
+                    </div>
+                    <Input id="confirmPassword" type="password" required />
+                  </Field>
+                  <Field>
+                    <Button type="submit">Register</Button>
                     <FieldDescription className="text-center">
-                      Don&apos;t have an account?{' '}
-                      <Link href="/signup">Sign up</Link>
+                      Already have an account?{' '}
+                      <Link href="/signin">Sign in</Link>
                     </FieldDescription>
                   </Field>
                 </FieldGroup>
