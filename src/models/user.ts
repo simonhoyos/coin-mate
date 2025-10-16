@@ -20,22 +20,60 @@ export class User {
     return record;
   }
 
-  static async create(args: {
+  static async signUp(args: {
     context: IContext;
-    data: z.infer<typeof UserCreationSchema>;
+    data: z.infer<typeof UserSignUpSchema>;
   }) {
-    UserCreationSchema.parse(args.data);
+    UserSignUpSchema.parse(args.data);
 
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(args.data.password, salt);
 
-    const [user] = await args.context.services.knex<User>('user').insert(
+    const user = await args.context.services.knex<User>('user').insert(
       {
         email: args.data.email,
         password: hash,
       },
       '*',
-    );
+    ).first();
+
+    const token =
+      user != null
+        ? jwt.sign(
+            { sub: user.id, iat: Math.floor(Date.now() / 1000) },
+            args.context.config.JWT_SECRET,
+            {
+              expiresIn: '7d',
+            },
+          )
+        : null;
+
+    return {
+      user,
+      token,
+    };
+  }
+
+  static async signIn(args: {
+    context: IContext;
+    data: z.infer<typeof UserSignInSchema>;
+  }) {
+    UserSignInSchema.parse(args.data);
+
+    const user = await args.context.services.knex<User>('user')
+      .where('email', args.data.email)
+      .limit(1)
+      .first();
+
+    if (user == null) {
+      throw new Error('Invalid email or password');
+    }
+
+    const isValid = await bcrypt.compare(args.data.password, user.password);
+
+    if (isValid !== true) {
+      throw new Error('Invalid email or password');
+    }
 
     const token =
       user != null
@@ -55,7 +93,7 @@ export class User {
   }
 }
 
-const UserCreationSchema = z
+const UserSignUpSchema = z
   .object({
     email: z.email(),
     password: z.string().min(8).max(64),
@@ -64,6 +102,12 @@ const UserCreationSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
+  });
+
+const UserSignInSchema = z
+  .object({
+    email: z.email(),
+    password: z.string(),
   });
 
 function createLoader<V, K = string, C = K>(

@@ -28,19 +28,25 @@ const userTypeDefs = `#graphql
     email: String
   }
 
-  input UserCreateInput {
+  input UserSignUpInput {
     email: String!
     password: String!
     confirmPassword: String!
   }
 
-  type UserCreatePayload {
+  input UserSignInInput {
+    email: String!
+    password: String!
+  }
+
+  type UserPayload {
     user: User
     token: String
   }
 
   extend type Mutation {
-    userCreate(input: UserCreateInput!): UserCreatePayload
+    userSignUp(input: UserSignUpInput!): UserPayload
+    userSignIn(input: UserSignInInput!): UserPayload
   }
 `;
 
@@ -51,7 +57,7 @@ const userResolvers = {
   },
 
   Mutation: {
-    async userCreate(
+    async userSignUp(
       _parent: never,
       args: {
         input: { email: string; password: string; confirmPassword: string };
@@ -60,7 +66,7 @@ const userResolvers = {
     ) {
       const { email, password, confirmPassword } = args.input;
 
-      const user = await User.create({
+      const signUpResult = await User.signUp({
         context,
         data: {
           email,
@@ -69,7 +75,33 @@ const userResolvers = {
         },
       });
 
-      return user;
+      return {
+        user: { id: signUpResult.user?.id },
+        token: signUpResult.token,
+      };
+    },
+
+    async userSignIn(
+      _parent: never,
+      args: {
+        input: { email: string; password: string };
+      },
+      context: IContext,
+    ) {
+      const { email, password } = args.input;
+
+      const signInResult = await User.signIn({
+        context,
+        data: {
+          email,
+          password,
+        },
+      });
+
+      return {
+        user: { id: signInResult.user?.id },
+        token: signInResult.token,
+      };
     },
   },
 };
