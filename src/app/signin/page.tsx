@@ -26,7 +26,7 @@ const SignInFormSchema = z.object({
     .max(64, 'Password should be at most 64 characters'),
 });
 
-export default function LoginPage() {
+export default function SignInPage() {
   const [signInMutation, signInState] = useMutation<
     {
       userSignIn: {

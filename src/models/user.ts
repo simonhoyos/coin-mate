@@ -29,16 +29,13 @@ export class User {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(args.data.password, salt);
 
-    const user = await args.context.services
-      .knex<User>('user')
-      .insert(
-        {
-          email: args.data.email,
-          password: hash,
-        },
-        '*',
-      )
-      .first();
+    const [user] = await args.context.services.knex<User>('user').insert(
+      {
+        email: args.data.email,
+        password: hash,
+      },
+      '*',
+    );
 
     const token =
       user != null
