@@ -3,7 +3,6 @@
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { PanelLeftIcon } from 'lucide-react';
-import { cookies } from 'next/headers';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +25,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
@@ -75,7 +73,6 @@ function SidebarProvider({
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
     async (value: boolean | ((value: boolean) => boolean)) => {
-      const cookieStore = await cookies();
       const openState = typeof value === 'function' ? value(open) : value;
       if (setOpenProp) {
         setOpenProp(openState);
@@ -84,13 +81,7 @@ function SidebarProvider({
       }
 
       // This sets the cookie to keep the sidebar state.
-      cookieStore.set(SIDEBAR_COOKIE_NAME, JSON.stringify(openState), {
-        httpOnly: true,
-        secure: true,
-        maxAge: SIDEBAR_COOKIE_MAX_AGE,
-        sameSite: 'strict',
-        path: '/',
-      });
+      localStorage.setItem(SIDEBAR_COOKIE_NAME, JSON.stringify(openState));
     },
     [setOpenProp, open],
   );
