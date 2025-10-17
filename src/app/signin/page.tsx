@@ -1,5 +1,7 @@
 'use client';
 
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { Controller, useForm } from 'react-hook-form';
@@ -25,12 +27,54 @@ const SignInFormSchema = z.object({
 });
 
 export default function LoginPage() {
+  const [signInMutation, signInState] = useMutation<
+    {
+      userSignIn: {
+        token?: string;
+
+        user?: {
+          id: string;
+        };
+      };
+    },
+    {
+      input: {
+        email: string;
+        password: string;
+      };
+    }
+  >(
+    gql`
+      mutation UserSignIn($input: UserSignInInput!) {
+        userSignIn(input: $input) {
+          token
+
+          user {
+            id
+          }
+        }
+      }
+    `,
+  );
+
   const form = useForm({
     resolver: zodResolver(SignInFormSchema),
+    mode: 'onBlur',
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   });
 
-  function onSubmit(data: z.infer<typeof SignInFormSchema>) {
-    console.log(data);
+  async function onSubmit(data: z.infer<typeof SignInFormSchema>) {
+    await signInMutation({
+      variables: {
+        input: {
+          email: data.email,
+          password: data.password,
+        },
+      },
+    });
   }
 
   return (
@@ -94,7 +138,12 @@ export default function LoginPage() {
                     )}
                   />
                   <Field>
-                    <Button type="submit">Login</Button>
+                    <Button
+                      type="submit"
+                      disabled={signInState.loading === true}
+                    >
+                      Login
+                    </Button>
                     <FieldDescription className="text-center">
                       Don&apos;t have an account?{' '}
                       <Link href="/signup">Sign up</Link>
