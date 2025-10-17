@@ -12,6 +12,12 @@ export interface IContext {
     knex: Knex;
   };
 
+  user?: {
+    id: string;
+  }
+
+  metadata?: Record<string, unknown>;
+
   dl: Map<symbol, Dataloader<unknown, unknown>>;
 
   cleanup: () => Promise<unknown[]>;
