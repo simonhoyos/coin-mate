@@ -12,9 +12,9 @@ export interface IContext {
     knex: Knex;
   };
 
-  user?: {
+  user: {
     id: string;
-  }
+  } | null;
 
   metadata?: Record<string, unknown>;
 

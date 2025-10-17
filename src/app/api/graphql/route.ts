@@ -3,9 +3,11 @@ import { ApolloServerPluginLandingPageDisabled } from '@apollo/server/plugin/dis
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import type Dataloader from 'dataloader';
+import jwt from 'jsonwebtoken';
 import type { NextRequest } from 'next/server';
 import { createConfig } from '@/lib/config';
 import { connect } from '@/lib/database';
+import { getSession } from '@/lib/session';
 import type { IContext, IGlobalCache } from '@/lib/types';
 import { resolvers as userResolvers, typeDefs as userTypeDefs } from './user';
 
@@ -62,12 +64,30 @@ async function createContext() {
     return Promise.all(destroyers.map((destroy) => destroy()));
   }
 
+  const config = createConfig();
+
+  const session = await getSession();
+
+  const sessionPayload =
+    session?.value != null
+      ? jwt.verify(session.value, config.JWT_SECRET)
+      : null;
+
+  const user =
+    typeof sessionPayload?.sub === 'string'
+      ? {
+          id: sessionPayload.sub,
+        }
+      : null;
+
   return {
-    config: createConfig(),
+    config,
 
     services: {
       knex: knex,
     },
+
+    user,
 
     dl: new Map<symbol, Dataloader<unknown, unknown>>(),
 

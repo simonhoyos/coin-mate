@@ -1,3 +1,5 @@
+import { assertNotNull } from '@/lib/assert';
+import { createSession } from '@/lib/session';
 import type { IContext } from '@/lib/types';
 import { User } from '@/models/user';
 
@@ -54,6 +56,10 @@ export const resolvers = {
           confirmPassword,
         },
       });
+
+      await createSession(
+        assertNotNull(signUpResult.token, 'User created without token'),
+      );
 
       return {
         user: { id: signUpResult.user?.id },

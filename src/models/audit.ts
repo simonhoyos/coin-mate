@@ -1,18 +1,18 @@
-import type { IContext } from "@/lib/types";
-import type { Knex } from "knex";
+import type { Knex } from 'knex';
 import { z } from 'zod';
+import type { IContext } from '@/lib/types';
 
 const AuditLogSchema = z.object({
   object: z.enum(['user']),
   object_id: z.uuid(),
   operation: z.enum(['create']),
   payload: z.record(z.string(), z.unknown()),
-})
+});
 
 export class Audit {
   id!: string;
 
-  created_at!: Date | string
+  created_at!: Date | string;
   updated_at!: Date | string;
 
   user_id?: string | null;

@@ -15,8 +15,8 @@ export async function up(knex) {
 
     table.jsonb('data').notNullable();
     table.jsonb('metadata').notNullable();
-  })
-};
+  });
+}
 
 /**
  * @param { import("knex").Knex } knex
@@ -24,4 +24,4 @@ export async function up(knex) {
  */
 export async function down(knex) {
   await knex.schema.dropTableIfExists('audit');
-};
+}
