@@ -1,10 +1,8 @@
 'use client';
 
-import {
-  IconDashboard,
-} from '@tabler/icons-react';
+import { IconDashboard } from '@tabler/icons-react';
+import Link from 'next/link';
 import type * as React from 'react';
-
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -16,7 +14,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import Link from 'next/link';
 import { Logo } from './ui/logo';
 
 const data = {
