@@ -45,7 +45,7 @@ export class User {
           context: args.context,
           data: {
             object: 'user',
-            object_id: assertNotNull(user?.id),
+            object_id: assertNotNull(user?.id, 'User could not be created'),
             operation: 'create',
             payload,
           },
