@@ -16,7 +16,7 @@ export async function up(knex) {
 
     table.unique(['name', 'user_id'], {
       indexName: 'category_active_unique_idx',
-      predicate: knex.raw('archived_at IS NULL')
+      predicate: knex.whereNull('archived_at')
     })
   })
 };
