@@ -16,10 +16,10 @@ export async function up(knex) {
 
     table.unique(['name', 'user_id'], {
       indexName: 'category_active_unique_idx',
-      predicate: knex.whereNull('archived_at')
-    })
-  })
-};
+      predicate: knex.whereNull('archived_at'),
+    });
+  });
+}
 
 /**
  * @param { import("knex").Knex } knex
@@ -27,4 +27,4 @@ export async function up(knex) {
  */
 export async function down(knex) {
   await knex.schema.dropTableIfExists('category');
-};
+}

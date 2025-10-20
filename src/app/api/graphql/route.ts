@@ -4,11 +4,16 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import type Dataloader from 'dataloader';
 import jwt from 'jsonwebtoken';
+import { merge } from 'lodash';
 import type { NextRequest } from 'next/server';
 import { createConfig } from '@/lib/config';
 import { connect } from '@/lib/database';
 import { getSession } from '@/lib/session';
 import type { IContext, IGlobalCache } from '@/lib/types';
+import {
+  resolvers as categoryResolvers,
+  typeDefs as categoryTypeDefs,
+} from './category';
 import { resolvers as userResolvers, typeDefs as userTypeDefs } from './user';
 
 const baseTypeDefs = `#graphql
@@ -24,8 +29,8 @@ const baseTypeDefs = `#graphql
 `;
 
 const server = new ApolloServer<IContext>({
-  typeDefs: [baseTypeDefs, userTypeDefs].flat(),
-  resolvers: userResolvers,
+  typeDefs: [baseTypeDefs, userTypeDefs, categoryTypeDefs].flat(),
+  resolvers: merge(userResolvers, categoryResolvers),
   plugins: [
     process.env.NODE_ENV === 'production'
       ? ApolloServerPluginLandingPageDisabled()

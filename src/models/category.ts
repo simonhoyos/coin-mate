@@ -1,7 +1,7 @@
-import { assertNotNull } from "@/lib/assert";
-import type { IContext } from "@/lib/types";
-import { z } from "zod";
-import { Audit } from "./audit";
+import { z } from 'zod';
+import { assertNotNull } from '@/lib/assert';
+import type { IContext } from '@/lib/types';
+import { Audit } from './audit';
 
 export class Category {
   id!: string;
@@ -27,7 +27,10 @@ export class Category {
         const payload = {
           name: args.data.name,
           description: args.data.description,
-          user_id: assertNotNull(args.context.user?.id, 'User must be authenticated to create a category'),
+          user_id: assertNotNull(
+            args.context.user?.id,
+            'User must be authenticated to create a category',
+          ),
         };
 
         const [category] = await trx<Category>('category').insert(payload, '*');
@@ -37,7 +40,10 @@ export class Category {
           context: args.context,
           data: {
             object: 'category',
-            object_id: assertNotNull(category?.id, 'Category could not be created'),
+            object_id: assertNotNull(
+              category?.id,
+              'Category could not be created',
+            ),
             operation: 'create',
             payload,
           },
