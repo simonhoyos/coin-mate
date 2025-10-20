@@ -1,7 +1,7 @@
 'use client';
 
 import { type Icon, IconCirclePlusFilled } from '@tabler/icons-react';
-
+import Link from 'next/link';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { Button } from './ui/button';
 
 export function NavMain({
   items,
@@ -36,9 +37,13 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
+              <SidebarMenuButton tooltip={item.title} asChild>
+                <Button className="p-0 justify-start" variant="ghost" asChild>
+                  <Link href={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                </Button>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

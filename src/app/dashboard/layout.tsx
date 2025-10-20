@@ -19,7 +19,7 @@ export default function DashboardLayout(
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="@container/main flex flex-1 flex-col py-4 md:py-6">
+        <div className="@container/main flex flex-1 flex-col py-4 md:py-6 px-4 lg:px-6">
           {props.children}
         </div>
       </SidebarInset>
