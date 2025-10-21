@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import Dataloader from 'dataloader';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
+import { createLoader } from '@/lib/dataloader';
 import type { IContext } from '@/lib/types';
 import { Audit } from './audit';
 
@@ -16,7 +16,7 @@ export class User {
   password!: string;
 
   static async gen(args: { context: IContext; id: string }) {
-    const record = getUserById({ context: args.context, id: args.id });
+    const record = await getUserById({ context: args.context, id: args.id });
 
     // TODO: authorization checks
     return record;
@@ -132,28 +132,6 @@ const UserSignInSchema = z.object({
   password: z.string(),
 });
 
-function createLoader<V, K = string, C = K>(
-  batchFn: (args: { context: IContext; keys: readonly K[] }) => Promise<V[]>,
-  options?: Dataloader.Options<K, V, C>,
-) {
-  const key = Symbol();
-
-  return (args: { context: IContext; id: K }) => {
-    if (args.context.dl.has(key) !== true) {
-      const loader = new Dataloader(
-        (keys: readonly K[]) => batchFn({ context: args.context, keys }),
-        options,
-      );
-
-      args.context.dl.set(key, loader);
-    }
-
-    const loader = args.context.dl.get(key) as Dataloader<K, V>;
-
-    return loader.load(args.id);
-  };
-}
-
 const getUserById = createLoader(
   async (args: { context: IContext; keys: readonly string[] }) => {
     const users = (await args.context.services
@@ -161,6 +139,6 @@ const getUserById = createLoader(
       .select(['user.id', 'user.email'])
       .whereIn('id', args.keys)) as unknown as Pick<User, 'id' | 'email'>[];
 
-    return users;
+    return args.keys.map((key) => users.find((user) => user.id === key));
   },
 );

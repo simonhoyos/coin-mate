@@ -20,6 +20,18 @@ export const typeDefs = `#graphql
 `;
 
 export const resolvers = {
+  Category: {
+    name: (parent: { id: string }, _args: never, context: IContext) =>
+      Category.gen({ context, id: parent.id }).then(
+        (category) => category?.name,
+      ),
+
+    description: (parent: { id: string }, _args: never, context: IContext) =>
+      Category.gen({ context, id: parent.id }).then(
+        (category) => category?.description,
+      ),
+  },
+
   Mutation: {
     async categoryCreate(
       _parent: never,

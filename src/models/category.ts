@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
+import { createLoader } from '@/lib/dataloader';
 import type { IContext } from '@/lib/types';
 import { Audit } from './audit';
 
@@ -15,6 +16,15 @@ export class Category {
   user_id!: string;
 
   archived_at?: Date | string | null;
+
+  static async gen(args: { context: IContext; id: string }) {
+    const record = await getCategoryById({
+      context: args.context,
+      id: args.id,
+    });
+
+    return record?.user_id === args.context.user?.id ? record : null;
+  }
 
   static async create(args: {
     context: IContext;
@@ -65,3 +75,25 @@ const CategoryCreateSchema = z.object({
   name: z.string().min(1).max(32),
   description: z.string().max(256).optional(),
 });
+
+const getCategoryById = createLoader(
+  async (args: { context: IContext; keys: readonly string[] }) => {
+    const categories = (await args.context.services
+      .knex<Category>('category')
+      .select([
+        'category.id',
+        'category.name',
+        'category.description',
+        'category.user_id',
+      ])
+      .whereIn('id', args.keys)
+      .whereNull('archived_at')) as unknown as Pick<
+      Category,
+      'id' | 'name' | 'description' | 'user_id'
+    >[];
+
+    return args.keys.map(
+      (key) => categories.find((category) => category.id === key) || null,
+    );
+  },
+);

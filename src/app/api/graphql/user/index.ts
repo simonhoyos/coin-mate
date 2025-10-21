@@ -35,7 +35,7 @@ export const typeDefs = `#graphql
 export const resolvers = {
   User: {
     email: (parent: { id: string }, _args: never, context: IContext) =>
-      User.gen({ context, id: parent.id }).then((user) => user.email),
+      User.gen({ context, id: parent.id }).then((user) => user?.email),
   },
 
   Mutation: {
