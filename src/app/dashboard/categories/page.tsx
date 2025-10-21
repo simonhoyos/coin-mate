@@ -1,16 +1,51 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCirclePlusFilled } from '@tabler/icons-react';
+import React from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import data from './data.json';
 
+const CategoryCreateFromSchema = z.object({
+  name: z.string().min(1).max(32),
+  description: z.string().max(256).optional(),
+});
+
 export default function CategoriesPage() {
+  const defaultValues = React.useMemo(
+    () => ({
+      name: '',
+      description: '',
+    }),
+    [],
+  );
+
+  const form = useForm({
+    resolver: zodResolver(CategoryCreateFromSchema),
+    mode: 'onBlur',
+    defaultValues,
+  });
+
+  async function onSubmit(data: z.infer<typeof CategoryCreateFromSchema>) {
+    console.log('Category created:', data);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center">
@@ -24,11 +59,62 @@ export default function CategoriesPage() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Are you absolutely sure?</DialogTitle>
-              <DialogDescription>
-                This action cannot be undone. This will permanently delete your
-                account and remove your data from our servers.
-              </DialogDescription>
+              <DialogTitle>Create a new category</DialogTitle>
+              <div>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="flex flex-col gap-4"
+                >
+                  <FieldGroup>
+                    <Controller
+                      name="name"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field>
+                          <FieldLabel htmlFor="name">Name</FieldLabel>
+                          <Input
+                            {...field}
+                            id="name"
+                            aria-invalid={fieldState.invalid}
+                            type="text"
+                          />
+                          {fieldState.invalid && (
+                            <FieldError errors={[fieldState.error]} />
+                          )}
+                        </Field>
+                      )}
+                    />
+                    <Controller
+                      name="description"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field>
+                          <FieldLabel htmlFor="description">
+                            Description
+                          </FieldLabel>
+                          <Input
+                            {...field}
+                            id="description"
+                            aria-invalid={fieldState.invalid}
+                            type="text"
+                          />
+                          {fieldState.invalid && (
+                            <FieldError errors={[fieldState.error]} />
+                          )}
+                        </Field>
+                      )}
+                    />
+                    <Field>
+                      <Button
+                        type="submit"
+                        // disabled={signInState.loading === true}
+                      >
+                        Create category
+                      </Button>
+                    </Field>
+                  </FieldGroup>
+                </form>
+              </div>
             </DialogHeader>
           </DialogContent>
         </Dialog>
