@@ -1,5 +1,7 @@
 'use client';
 
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCirclePlusFilled } from '@tabler/icons-react';
 import React from 'react';
@@ -28,6 +30,33 @@ const CategoryCreateFromSchema = z.object({
 });
 
 export default function CategoriesPage() {
+  const [categoryCreateMutation, categoryCreateState] = useMutation<
+    {
+      categoryCreate: {
+        id: string;
+
+        name?: string;
+        description?: string;
+      };
+    },
+    {
+      input: {
+        name: string;
+        description: string | undefined;
+      };
+    }
+  >(
+    gql`
+      mutation CategoryCreateMutation($input: CategoryCreateInput!) {
+        categoryCreate(input: $input) {
+          id
+          name
+          description
+        }
+      }
+    `,
+  );
+
   const defaultValues = React.useMemo(
     () => ({
       name: '',
@@ -43,7 +72,14 @@ export default function CategoriesPage() {
   });
 
   async function onSubmit(data: z.infer<typeof CategoryCreateFromSchema>) {
-    console.log('Category created:', data);
+    await categoryCreateMutation({
+      variables: {
+        input: {
+          name: data.name,
+          description: data.description,
+        },
+      },
+    });
   }
 
   return (
@@ -107,7 +143,7 @@ export default function CategoriesPage() {
                     <Field>
                       <Button
                         type="submit"
-                        // disabled={signInState.loading === true}
+                        disabled={categoryCreateState.loading === true}
                       >
                         Create category
                       </Button>

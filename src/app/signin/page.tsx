@@ -4,6 +4,7 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -45,7 +46,7 @@ export default function SignInPage() {
     }
   >(
     gql`
-      mutation UserSignIn($input: UserSignInInput!) {
+      mutation UserSignInMutation($input: UserSignInInput!) {
         userSignIn(input: $input) {
           token
 
@@ -57,13 +58,18 @@ export default function SignInPage() {
     `,
   );
 
+  const defaultValues = React.useMemo(
+    () => ({
+      email: '',
+      password: '',
+    }),
+    [],
+  );
+
   const form = useForm({
     resolver: zodResolver(SignInFormSchema),
     mode: 'onBlur',
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues,
   });
 
   async function onSubmit(data: z.infer<typeof SignInFormSchema>) {
