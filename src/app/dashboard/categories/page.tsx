@@ -1,7 +1,7 @@
 'use client';
 
 import { gql } from '@apollo/client';
-import { useMutation } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCirclePlusFilled } from '@tabler/icons-react';
 import React from 'react';
@@ -22,7 +22,6 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import data from './data.json';
 
 const CategoryCreateFromSchema = z.object({
   name: z.string().min(1).max(32),
@@ -30,6 +29,32 @@ const CategoryCreateFromSchema = z.object({
 });
 
 export default function CategoriesPage() {
+  const categoryListQuery = useQuery<{
+    categoryList: {
+      edges?: {
+        id: string;
+
+        name?: string;
+        description?: string;
+      }[];
+    };
+  }>(
+    gql`
+      query CategoryListQuery {
+        categoryList {
+          edges {
+            id
+
+            name
+            description
+          }
+        }
+      }
+    `
+  )
+
+  const categoryListData = categoryListQuery.data?.categoryList?.edges ?? [];
+
   const [categoryCreateMutation, categoryCreateState] = useMutation<
     {
       categoryCreate: {
@@ -156,9 +181,10 @@ export default function CategoriesPage() {
         </Dialog>
       </div>
       <section className="flex flex-1 flex-col gap-4">
-        {data.map((category) => (
+        {categoryListData.map((category) => (
           <div key={category.id} className="px-4 py-6 border rounded shadow-xs">
             <h2>{category.name}</h2>
+            {category.description != null && <p>{category.description}</p>}
           </div>
         ))}
       </section>
