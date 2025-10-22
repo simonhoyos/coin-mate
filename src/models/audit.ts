@@ -5,7 +5,7 @@ import type { IContext } from '@/lib/types';
 const AuditLogSchema = z.object({
   object: z.enum(['user', 'category']),
   object_id: z.uuid(),
-  operation: z.enum(['create', 'update']),
+  operation: z.enum(['create', 'update', 'delete']),
   payload: z.record(z.string(), z.unknown()),
 });
 

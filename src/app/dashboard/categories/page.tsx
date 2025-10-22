@@ -3,7 +3,12 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IconCirclePlusFilled, IconPencil } from '@tabler/icons-react';
+import { DialogDescription } from '@radix-ui/react-dialog';
+import {
+  IconCirclePlusFilled,
+  IconPencil,
+  IconTrash,
+} from '@tabler/icons-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -201,11 +206,14 @@ export default function CategoriesPage() {
               {category.description != null && <p>{category.description}</p>}
             </div>
 
-            <CategoryUpdateForm
-              id={category.id}
-              name={category.name}
-              description={category.description}
-            />
+            <div className="flex gap-2">
+              <CategoryUpdateAction
+                id={category.id}
+                name={category.name}
+                description={category.description}
+              />
+              <CategoryDeleteAction id={category.id} />
+            </div>
           </div>
         ))}
       </section>
@@ -213,7 +221,7 @@ export default function CategoriesPage() {
   );
 }
 
-function CategoryUpdateForm(props: {
+function CategoryUpdateAction(props: {
   id: string;
 
   name: string | undefined;
@@ -223,7 +231,7 @@ function CategoryUpdateForm(props: {
 
   const [categoryUpdateMutation, categoryUpdateState] = useMutation<
     {
-      categoryUpdate: {
+      categoryUpdate?: {
         id: string;
 
         name?: string;
@@ -345,6 +353,81 @@ function CategoryUpdateForm(props: {
             </form>
           </div>
         </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CategoryDeleteAction(props: { id: string }) {
+  const [open, setOpen] = React.useState(false);
+
+  const [categoryDeleteMutation, categoryDeleteState] = useMutation<
+    {
+      categoryDelete?: {
+        id: string;
+      };
+    },
+    {
+      input: {
+        id: string;
+      };
+    }
+  >(
+    gql`
+      mutation CategoryDeleteMutation($input: CategoryDeleteInput!) {
+        categoryDelete(input: $input) {
+          id
+        }
+      }
+    `,
+  );
+
+  async function categoryDeleteConfirm() {
+    await categoryDeleteMutation({
+      variables: {
+        input: {
+          id: props.id,
+        },
+      },
+    });
+
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="ghost">
+          <IconTrash />
+          <span className="sr-only">Delete category</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Update an existing category</DialogTitle>
+          <DialogDescription>
+            <p>Are you sure you want to delete this category?</p>
+            <p>This action cannot be undone</p>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-2 justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={categoryDeleteState.loading === true}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={categoryDeleteConfirm}
+            disabled={categoryDeleteState.loading === true}
+          >
+            Delete category
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

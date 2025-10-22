@@ -34,15 +34,26 @@ export class Category {
   }) {
     CategoryCreateSchema.parse(args.data);
 
+    const userId = assertNotNull(
+      args.context.user?.id,
+      'User must be authenticated to update a category',
+    );
+
+    await User.gen({
+      context: args.context,
+      id: userId,
+    }).then((user) => {
+      if (user == null) {
+        throw new Error('User not found');
+      }
+    });
+
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
         const payload = {
           name: args.data.name,
           description: args.data.description,
-          user_id: assertNotNull(
-            args.context.user?.id,
-            'User must be authenticated to create a category',
-          ),
+          user_id: userId,
         };
 
         const [category] = await trx<Category>('category').insert(payload, '*');
@@ -78,7 +89,7 @@ export class Category {
   }) {
     CategoryUpdateSchema.parse(args.data);
 
-    User.gen({
+    await User.gen({
       context: args.context,
       id: assertNotNull(
         args.context.user?.id,
@@ -90,7 +101,7 @@ export class Category {
       }
     });
 
-    Category.gen({
+    await Category.gen({
       context: args.context,
       id: args.data.id,
     }).then((category) => {
@@ -139,6 +150,70 @@ export class Category {
       category: trxResult.category,
     };
   }
+
+  static async delete(args: {
+    context: IContext;
+    data: z.infer<typeof CategoryDeleteSchema>;
+  }) {
+    CategoryDeleteSchema.parse(args.data);
+
+    await User.gen({
+      context: args.context,
+      id: assertNotNull(
+        args.context.user?.id,
+        'User must be authenticated to delete a category',
+      ),
+    }).then((user) => {
+      if (user == null) {
+        throw new Error('User not found');
+      }
+    });
+
+    await Category.gen({
+      context: args.context,
+      id: args.data.id,
+    }).then((category) => {
+      if (category == null) {
+        throw new Error('Category not found');
+      }
+    });
+
+    const trxResult = await args.context.services.knex.transaction(
+      async (trx) => {
+        const payload = {
+          archived_at: new Date(),
+        };
+
+        const [category] = await trx<Category>('category')
+          .update(payload, '*')
+          .where({
+            id: args.data.id,
+          });
+
+        await Audit.log({
+          trx,
+          context: args.context,
+          data: {
+            object: 'category',
+            object_id: assertNotNull(
+              category?.id,
+              'Category could not be deleted',
+            ),
+            operation: 'delete',
+            payload,
+          },
+        });
+
+        return {
+          category,
+        };
+      },
+    );
+
+    return {
+      category: trxResult.category,
+    };
+  }
 }
 
 const CategoryCreateSchema = z.object({
@@ -147,9 +222,13 @@ const CategoryCreateSchema = z.object({
 });
 
 const CategoryUpdateSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string().min(1).max(32).optional(),
   description: z.string().max(256).optional(),
+});
+
+const CategoryDeleteSchema = z.object({
+  id: z.uuid(),
 });
 
 const getCategoryById = createLoader(
