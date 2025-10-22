@@ -201,26 +201,11 @@ export default function CategoriesPage() {
               {category.description != null && <p>{category.description}</p>}
             </div>
 
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button type="button" variant="ghost">
-                  <IconPencil />
-                  <span className="sr-only">Update category</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Update an existing category</DialogTitle>
-                  <div>
-                    <CategoryUpdateForm
-                      id={category.id}
-                      name={category.name}
-                      description={category.description}
-                    />
-                  </div>
-                </DialogHeader>
-              </DialogContent>
-            </Dialog>
+            <CategoryUpdateForm
+              id={category.id}
+              name={category.name}
+              description={category.description}
+            />
           </div>
         ))}
       </section>
@@ -234,6 +219,8 @@ function CategoryUpdateForm(props: {
   name: string | undefined;
   description: string | undefined;
 }) {
+  const [open, setOpen] = React.useState(false);
+
   const [categoryUpdateMutation, categoryUpdateState] = useMutation<
     {
       categoryUpdate: {
@@ -289,52 +276,76 @@ function CategoryUpdateForm(props: {
         },
       },
     });
+
+    setOpen(false);
   }
 
   return (
-    <form
-      onSubmit={categoryUpdateForm.handleSubmit(categoryUpdateSubmit)}
-      className="flex flex-col gap-4"
-    >
-      <FieldGroup>
-        <Controller
-          name="name"
-          control={categoryUpdateForm.control}
-          render={({ field, fieldState }) => (
-            <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
-              <Input
-                {...field}
-                id="name"
-                aria-invalid={fieldState.invalid}
-                type="text"
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-        <Controller
-          name="description"
-          control={categoryUpdateForm.control}
-          render={({ field, fieldState }) => (
-            <Field>
-              <FieldLabel htmlFor="description">Description</FieldLabel>
-              <Input
-                {...field}
-                id="description"
-                aria-invalid={fieldState.invalid}
-                type="text"
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
-        <Field>
-          <Button type="submit" disabled={categoryUpdateState.loading === true}>
-            Update category
-          </Button>
-        </Field>
-      </FieldGroup>
-    </form>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="ghost">
+          <IconPencil />
+          <span className="sr-only">Update category</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Update an existing category</DialogTitle>
+          <div>
+            <form
+              onSubmit={categoryUpdateForm.handleSubmit(categoryUpdateSubmit)}
+              className="flex flex-col gap-4"
+            >
+              <FieldGroup>
+                <Controller
+                  name="name"
+                  control={categoryUpdateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field>
+                      <FieldLabel htmlFor="name">Name</FieldLabel>
+                      <Input
+                        {...field}
+                        id="name"
+                        aria-invalid={fieldState.invalid}
+                        type="text"
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="description"
+                  control={categoryUpdateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field>
+                      <FieldLabel htmlFor="description">Description</FieldLabel>
+                      <Input
+                        {...field}
+                        id="description"
+                        aria-invalid={fieldState.invalid}
+                        type="text"
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Field>
+                  <Button
+                    type="submit"
+                    disabled={categoryUpdateState.loading === true}
+                  >
+                    Update category
+                  </Button>
+                </Field>
+              </FieldGroup>
+            </form>
+          </div>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
   );
 }
