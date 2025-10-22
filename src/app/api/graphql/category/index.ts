@@ -15,6 +15,12 @@ export const typeDefs = `#graphql
     description: String
   }
 
+  input CategoryUpdateInput {
+    id: UUID!
+    name: String
+    description: String
+  }
+
   type CategoryConnection {
     edges: [Category]
   }
@@ -25,6 +31,7 @@ export const typeDefs = `#graphql
 
   extend type Mutation {
     categoryCreate(input: CategoryCreateInput!): Category
+    categoryUpdate(input: CategoryUpdateInput!): Category
   }
 `;
 
@@ -82,6 +89,27 @@ export const resolvers = {
       const createResult = await Category.create({
         context,
         data: {
+          name,
+          description,
+        },
+      });
+
+      return {
+        id: createResult.category?.id,
+      };
+    },
+
+    async categoryUpdate(
+      _parent: never,
+      args: { input: { id: string; name?: string; description?: string } },
+      context: IContext,
+    ) {
+      const { id, name, description } = args.input;
+
+      const createResult = await Category.update({
+        context,
+        data: {
+          id,
           name,
           description,
         },

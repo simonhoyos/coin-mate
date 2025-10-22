@@ -3,7 +3,7 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IconCirclePlusFilled } from '@tabler/icons-react';
+import { IconCirclePlusFilled, IconPencil } from '@tabler/icons-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -23,8 +23,14 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
-const CategoryCreateFromSchema = z.object({
+const CategoryCreateFormSchema = z.object({
   name: z.string().min(1).max(32),
+  description: z.string().max(256).optional(),
+});
+
+const CategoryUpdateFormSchema = z.object({
+  id: z.uuid(),
+  name: z.string().min(1).max(32).optional(),
   description: z.string().max(256).optional(),
 });
 
@@ -50,8 +56,8 @@ export default function CategoriesPage() {
           }
         }
       }
-    `
-  )
+    `,
+  );
 
   const categoryListData = categoryListQuery.data?.categoryList?.edges ?? [];
 
@@ -82,7 +88,7 @@ export default function CategoriesPage() {
     `,
   );
 
-  const defaultValues = React.useMemo(
+  const categoryCreateDefaultValues = React.useMemo(
     () => ({
       name: '',
       description: '',
@@ -90,13 +96,15 @@ export default function CategoriesPage() {
     [],
   );
 
-  const form = useForm({
-    resolver: zodResolver(CategoryCreateFromSchema),
+  const categoryCreateForm = useForm({
+    resolver: zodResolver(CategoryCreateFormSchema),
     mode: 'onBlur',
-    defaultValues,
+    defaultValues: categoryCreateDefaultValues,
   });
 
-  async function onSubmit(data: z.infer<typeof CategoryCreateFromSchema>) {
+  async function categoryCreateSubmit(
+    data: z.infer<typeof CategoryCreateFormSchema>,
+  ) {
     await categoryCreateMutation({
       variables: {
         input: {
@@ -113,7 +121,7 @@ export default function CategoriesPage() {
         <h1>Categories</h1>
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear">
+            <Button type="button">
               <IconCirclePlusFilled />
               <span>Create category</span>
             </Button>
@@ -123,13 +131,15 @@ export default function CategoriesPage() {
               <DialogTitle>Create a new category</DialogTitle>
               <div>
                 <form
-                  onSubmit={form.handleSubmit(onSubmit)}
+                  onSubmit={categoryCreateForm.handleSubmit(
+                    categoryCreateSubmit,
+                  )}
                   className="flex flex-col gap-4"
                 >
                   <FieldGroup>
                     <Controller
                       name="name"
-                      control={form.control}
+                      control={categoryCreateForm.control}
                       render={({ field, fieldState }) => (
                         <Field>
                           <FieldLabel htmlFor="name">Name</FieldLabel>
@@ -147,7 +157,7 @@ export default function CategoriesPage() {
                     />
                     <Controller
                       name="description"
-                      control={form.control}
+                      control={categoryCreateForm.control}
                       render={({ field, fieldState }) => (
                         <Field>
                           <FieldLabel htmlFor="description">
@@ -182,12 +192,149 @@ export default function CategoriesPage() {
       </div>
       <section className="flex flex-1 flex-col gap-4">
         {categoryListData.map((category) => (
-          <div key={category.id} className="px-4 py-6 border rounded shadow-xs">
-            <h2>{category.name}</h2>
-            {category.description != null && <p>{category.description}</p>}
+          <div
+            key={category.id}
+            className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
+          >
+            <div className="flex flex-col gap-2">
+              <h2>{category.name}</h2>
+              {category.description != null && <p>{category.description}</p>}
+            </div>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button type="button" variant="ghost">
+                  <IconPencil />
+                  <span className="sr-only">Update category</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Update an existing category</DialogTitle>
+                  <div>
+                    <CategoryUpdateForm
+                      id={category.id}
+                      name={category.name}
+                      description={category.description}
+                    />
+                  </div>
+                </DialogHeader>
+              </DialogContent>
+            </Dialog>
           </div>
         ))}
       </section>
     </div>
+  );
+}
+
+function CategoryUpdateForm(props: {
+  id: string;
+
+  name: string | undefined;
+  description: string | undefined;
+}) {
+  const [categoryUpdateMutation, categoryUpdateState] = useMutation<
+    {
+      categoryUpdate: {
+        id: string;
+
+        name?: string;
+        description?: string;
+      };
+    },
+    {
+      input: {
+        id: string;
+        name: string | undefined;
+        description: string | undefined;
+      };
+    }
+  >(
+    gql`
+      mutation CategoryUpdateMutation($input: CategoryUpdateInput!) {
+        categoryUpdate(input: $input) {
+          id
+          name
+          description
+        }
+      }
+    `,
+  );
+
+  const categoryUpdateDefaultValues = React.useMemo(
+    () => ({
+      id: props.id,
+      name: props.name ?? '',
+      description: props.description ?? '',
+    }),
+    [props.id, props.name, props.description],
+  );
+
+  const categoryUpdateForm = useForm({
+    resolver: zodResolver(CategoryUpdateFormSchema),
+    mode: 'onBlur',
+    defaultValues: categoryUpdateDefaultValues,
+  });
+
+  async function categoryUpdateSubmit(
+    data: z.infer<typeof CategoryUpdateFormSchema>,
+  ) {
+    await categoryUpdateMutation({
+      variables: {
+        input: {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+        },
+      },
+    });
+  }
+
+  return (
+    <form
+      onSubmit={categoryUpdateForm.handleSubmit(categoryUpdateSubmit)}
+      className="flex flex-col gap-4"
+    >
+      <FieldGroup>
+        <Controller
+          name="name"
+          control={categoryUpdateForm.control}
+          render={({ field, fieldState }) => (
+            <Field>
+              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <Input
+                {...field}
+                id="name"
+                aria-invalid={fieldState.invalid}
+                type="text"
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+        <Controller
+          name="description"
+          control={categoryUpdateForm.control}
+          render={({ field, fieldState }) => (
+            <Field>
+              <FieldLabel htmlFor="description">Description</FieldLabel>
+              <Input
+                {...field}
+                id="description"
+                aria-invalid={fieldState.invalid}
+                type="text"
+              />
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+        <Field>
+          <Button type="submit" disabled={categoryUpdateState.loading === true}>
+            Update category
+          </Button>
+        </Field>
+      </FieldGroup>
+    </form>
   );
 }
