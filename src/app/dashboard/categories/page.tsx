@@ -4,11 +4,7 @@ import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogDescription } from '@radix-ui/react-dialog';
-import {
-  IconCirclePlusFilled,
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconCirclePlus, IconPencil, IconTrash } from '@tabler/icons-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -40,8 +36,10 @@ const CategoryUpdateFormSchema = z.object({
 });
 
 export default function CategoriesPage() {
+  const [open, setOpen] = React.useState(false);
+
   const categoryListQuery = useQuery<{
-    categoryList: {
+    categoryList?: {
       edges?: {
         id: string;
 
@@ -68,7 +66,7 @@ export default function CategoriesPage() {
 
   const [categoryCreateMutation, categoryCreateState] = useMutation<
     {
-      categoryCreate: {
+      categoryCreate?: {
         id: string;
 
         name?: string;
@@ -118,80 +116,88 @@ export default function CategoriesPage() {
         },
       },
     });
+
+    setOpen(false);
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center">
         <h1>Categories</h1>
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button type="button">
-              <IconCirclePlusFilled />
+            <Button type="button" variant="outline">
+              <IconCirclePlus />
               <span>Create category</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create a new category</DialogTitle>
-              <div>
-                <form
-                  onSubmit={categoryCreateForm.handleSubmit(
-                    categoryCreateSubmit,
-                  )}
-                  className="flex flex-col gap-4"
-                >
-                  <FieldGroup>
-                    <Controller
-                      name="name"
-                      control={categoryCreateForm.control}
-                      render={({ field, fieldState }) => (
-                        <Field>
-                          <FieldLabel htmlFor="name">Name</FieldLabel>
-                          <Input
-                            {...field}
-                            id="name"
-                            aria-invalid={fieldState.invalid}
-                            type="text"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
-                    <Controller
-                      name="description"
-                      control={categoryCreateForm.control}
-                      render={({ field, fieldState }) => (
-                        <Field>
-                          <FieldLabel htmlFor="description">
-                            Description
-                          </FieldLabel>
-                          <Input
-                            {...field}
-                            id="description"
-                            aria-invalid={fieldState.invalid}
-                            type="text"
-                          />
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
-                    <Field>
-                      <Button
-                        type="submit"
-                        disabled={categoryCreateState.loading === true}
-                      >
-                        Create category
-                      </Button>
-                    </Field>
-                  </FieldGroup>
-                </form>
-              </div>
             </DialogHeader>
+            <form
+              onSubmit={categoryCreateForm.handleSubmit(categoryCreateSubmit)}
+              className="flex flex-col gap-4"
+            >
+              <FieldGroup>
+                <Controller
+                  name="name"
+                  control={categoryCreateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field>
+                      <FieldLabel htmlFor="name">Name</FieldLabel>
+                      <Input
+                        {...field}
+                        id="name"
+                        aria-invalid={fieldState.invalid}
+                        type="text"
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="description"
+                  control={categoryCreateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field>
+                      <FieldLabel htmlFor="description">Description</FieldLabel>
+                      <Input
+                        {...field}
+                        id="description"
+                        aria-invalid={fieldState.invalid}
+                        type="text"
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Field>
+                  <div className="flex flex-1 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      disabled={categoryCreateState.loading === true}
+                      onClick={() => setOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1"
+                      disabled={categoryCreateState.loading === true}
+                    >
+                      Create category
+                    </Button>
+                  </div>
+                </Field>
+              </FieldGroup>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
@@ -299,60 +305,70 @@ function CategoryUpdateAction(props: {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Update an existing category</DialogTitle>
-          <div>
-            <form
-              onSubmit={categoryUpdateForm.handleSubmit(categoryUpdateSubmit)}
-              className="flex flex-col gap-4"
-            >
-              <FieldGroup>
-                <Controller
-                  name="name"
-                  control={categoryUpdateForm.control}
-                  render={({ field, fieldState }) => (
-                    <Field>
-                      <FieldLabel htmlFor="name">Name</FieldLabel>
-                      <Input
-                        {...field}
-                        id="name"
-                        aria-invalid={fieldState.invalid}
-                        type="text"
-                      />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-                <Controller
-                  name="description"
-                  control={categoryUpdateForm.control}
-                  render={({ field, fieldState }) => (
-                    <Field>
-                      <FieldLabel htmlFor="description">Description</FieldLabel>
-                      <Input
-                        {...field}
-                        id="description"
-                        aria-invalid={fieldState.invalid}
-                        type="text"
-                      />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-                <Field>
-                  <Button
-                    type="submit"
-                    disabled={categoryUpdateState.loading === true}
-                  >
-                    Update category
-                  </Button>
-                </Field>
-              </FieldGroup>
-            </form>
-          </div>
         </DialogHeader>
+        <form
+          onSubmit={categoryUpdateForm.handleSubmit(categoryUpdateSubmit)}
+          className="flex flex-col gap-4"
+        >
+          <FieldGroup>
+            <Controller
+              name="name"
+              control={categoryUpdateForm.control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor="name">Name</FieldLabel>
+                  <Input
+                    {...field}
+                    id="name"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
+              name="description"
+              control={categoryUpdateForm.control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor="description">Description</FieldLabel>
+                  <Input
+                    {...field}
+                    id="description"
+                    aria-invalid={fieldState.invalid}
+                    type="text"
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Field>
+              <div className="flex flex-1 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={categoryUpdateState.loading === true}
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={categoryUpdateState.loading === true}
+                >
+                  Update category
+                </Button>
+              </div>
+            </Field>
+          </FieldGroup>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -398,7 +414,7 @@ function CategoryDeleteAction(props: { id: string }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant="ghost">
-          <IconTrash />
+          <IconTrash className="text-destructive" />
           <span className="sr-only">Delete category</span>
         </Button>
       </DialogTrigger>
@@ -406,14 +422,16 @@ function CategoryDeleteAction(props: { id: string }) {
         <DialogHeader>
           <DialogTitle>Update an existing category</DialogTitle>
           <DialogDescription>
-            <p>Are you sure you want to delete this category?</p>
-            <p>This action cannot be undone</p>
+            Are you sure you want to delete this category?
+            <br />
+            This action cannot be undone
           </DialogDescription>
         </DialogHeader>
         <div className="flex gap-2 justify-end">
           <Button
             type="button"
             variant="outline"
+            className="flex-1"
             onClick={() => setOpen(false)}
             disabled={categoryDeleteState.loading === true}
           >
@@ -422,6 +440,7 @@ function CategoryDeleteAction(props: { id: string }) {
           <Button
             type="button"
             variant="destructive"
+            className="flex-1"
             onClick={categoryDeleteConfirm}
             disabled={categoryDeleteState.loading === true}
           >
