@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { IContext } from '@/lib/types';
 
 const AuditLogSchema = z.object({
-  object: z.enum(['user', 'category']),
+  object: z.enum(['user', 'category', 'transaction_ledger']),
   object_id: z.uuid(),
   operation: z.enum(['create', 'update', 'delete']),
   payload: z.record(z.string(), z.unknown()),

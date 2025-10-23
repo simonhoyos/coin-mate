@@ -9,16 +9,17 @@ export async function up(knex) {
 
     table.text('concept').notNullable();
     table.text('description').nullable();
-    table.text('currency').notNullable()
+    table.text('currency').notNullable();
     table.integer('amount_cents').notNullable();
     table.timestamp('transacted_at').notNullable();
+    table.text('type').notNullable();
 
     table.uuid('user_id').references('user.id').notNullable();
     table.uuid('category_id').references('category.id').notNullable();
 
     table.timestamp('archived_at').nullable();
   });
-};
+}
 
 /**
  * @param { import("knex").Knex } knex
@@ -26,4 +27,4 @@ export async function up(knex) {
  */
 export async function down(knex) {
   await knex.schema.dropTableIfExists('transaction_ledger');
-};
+}
