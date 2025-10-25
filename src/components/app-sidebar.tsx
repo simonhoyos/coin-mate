@@ -1,6 +1,10 @@
 'use client';
 
-import { IconCategory, IconDashboard } from '@tabler/icons-react';
+import {
+  IconBuildingBank,
+  IconCategory,
+  IconDashboard,
+} from '@tabler/icons-react';
 import Link from 'next/link';
 import type * as React from 'react';
 import { NavMain } from '@/components/nav-main';
@@ -25,8 +29,13 @@ const data = {
   navMain: [
     {
       title: 'Dashboard',
-      url: '#',
+      url: '/dashboard',
       icon: IconDashboard,
+    },
+    {
+      title: 'Expenses',
+      url: '/dashboard/expenses',
+      icon: IconBuildingBank,
     },
     {
       title: 'Categories',
