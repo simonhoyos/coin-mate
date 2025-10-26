@@ -84,6 +84,10 @@ export const resolvers = {
         },
       });
 
+      await createSession(
+        assertNotNull(signInResult.token, 'User created without token'),
+      );
+
       return {
         user: { id: signInResult.user?.id },
         token: signInResult.token,
