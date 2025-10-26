@@ -36,7 +36,7 @@ export class Category {
 
     const userId = assertNotNull(
       args.context.user?.id,
-      'User must be authenticated to update a category',
+      'User must be authenticated to create a category',
     );
 
     await User.gen({
