@@ -117,7 +117,10 @@ export default function CategoriesPage() {
       },
     });
 
+    await categoryListQuery.refetch();
+
     setOpen(false);
+    categoryCreateForm.reset();
   }
 
   return (
@@ -137,7 +140,7 @@ export default function CategoriesPage() {
             </DialogHeader>
             <form
               onSubmit={categoryCreateForm.handleSubmit(categoryCreateSubmit)}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-2"
             >
               <FieldGroup>
                 <Controller
@@ -208,8 +211,10 @@ export default function CategoriesPage() {
             className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
           >
             <div className="flex flex-col gap-2">
-              <h2>{category.name}</h2>
-              {category.description != null && <p>{category.description}</p>}
+              <h2 className="font-bold">{category.name}</h2>
+              {(category.description ?? '') !== '' && (
+                <p>{category.description}</p>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -217,8 +222,12 @@ export default function CategoriesPage() {
                 id={category.id}
                 name={category.name}
                 description={category.description}
+                refetch={categoryListQuery.refetch}
               />
-              <CategoryDeleteAction id={category.id} />
+              <CategoryDeleteAction
+                id={category.id}
+                refetch={categoryListQuery.refetch}
+              />
             </div>
           </div>
         ))}
@@ -232,6 +241,8 @@ function CategoryUpdateAction(props: {
 
   name: string | undefined;
   description: string | undefined;
+
+  refetch: () => Promise<unknown>;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -290,6 +301,8 @@ function CategoryUpdateAction(props: {
         },
       },
     });
+
+    await props.refetch();
 
     setOpen(false);
   }
@@ -374,7 +387,10 @@ function CategoryUpdateAction(props: {
   );
 }
 
-function CategoryDeleteAction(props: { id: string }) {
+function CategoryDeleteAction(props: {
+  id: string;
+  refetch: () => Promise<unknown>;
+}) {
   const [open, setOpen] = React.useState(false);
 
   const [categoryDeleteMutation, categoryDeleteState] = useMutation<
@@ -406,6 +422,8 @@ function CategoryDeleteAction(props: { id: string }) {
         },
       },
     });
+
+    await props.refetch();
 
     setOpen(false);
   }
