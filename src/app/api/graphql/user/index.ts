@@ -26,6 +26,10 @@ export const typeDefs = `#graphql
     token: String
   }
 
+  extend type Query {
+    me: User
+  }
+
   extend type Mutation {
     userSignUp(input: UserSignUpInput!): UserPayload
     userSignIn(input: UserSignInInput!): UserPayload
@@ -36,6 +40,19 @@ export const resolvers = {
   User: {
     email: (parent: { id: string }, _args: never, context: IContext) =>
       User.gen({ context, id: parent.id }).then((user) => user?.email),
+  },
+
+  Query: {
+    async me(_parent: never, _args: never, context: IContext) {
+      const userId = assertNotNull(
+        context.user?.id,
+        'User must be authenticated to fetch own data',
+      );
+
+      return User.gen({ context, id: userId }).then((user) =>
+        user?.id != null ? { id: user.id } : undefined,
+      );
+    },
   },
 
   Mutation: {
