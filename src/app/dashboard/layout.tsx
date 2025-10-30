@@ -1,3 +1,6 @@
+import { gql } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
+import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -7,6 +10,26 @@ export default function DashboardLayout(
     children: React.ReactNode;
   }>,
 ) {
+  const meQuery = useQuery<{
+    me?: {
+      id: string;
+    };
+  }>(
+    gql`
+      query MeQueryFromDashboard {
+        me {
+          id
+        }
+      }
+    `,
+  );
+
+  const meData = meQuery.data;
+
+  if (meData?.me?.id != null) {
+    redirect('/signin');
+  }
+
   return (
     <SidebarProvider
       style={

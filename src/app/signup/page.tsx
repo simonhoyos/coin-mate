@@ -39,7 +39,7 @@ export default function SignUpPage() {
     };
   }>(
     gql`
-      query MeQueryFromSignIn {
+      query MeQueryFromSignUp {
         me {
           id
         }
