@@ -14,6 +14,10 @@ import {
   resolvers as categoryResolvers,
   typeDefs as categoryTypeDefs,
 } from './category';
+import {
+  resolvers as transactionLedgerResolvers,
+  typeDefs as transactionLedgerTypeDefs,
+} from './transaction-ledger';
 import { resolvers as userResolvers, typeDefs as userTypeDefs } from './user';
 
 const baseTypeDefs = `#graphql
@@ -29,8 +33,17 @@ const baseTypeDefs = `#graphql
 `;
 
 const server = new ApolloServer<IContext>({
-  typeDefs: [baseTypeDefs, userTypeDefs, categoryTypeDefs].flat(),
-  resolvers: merge(userResolvers, categoryResolvers),
+  typeDefs: [
+    baseTypeDefs,
+    userTypeDefs,
+    categoryTypeDefs,
+    transactionLedgerTypeDefs,
+  ].flat(),
+  resolvers: merge(
+    userResolvers,
+    categoryResolvers,
+    transactionLedgerResolvers,
+  ),
   plugins: [
     process.env.NODE_ENV === 'production'
       ? ApolloServerPluginLandingPageDisabled()

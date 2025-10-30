@@ -26,7 +26,7 @@ export class TransactionLedger {
     context: IContext;
     data: z.infer<typeof TransactionLedgerCreateSchema>;
   }) {
-    TransactionLedgerCreateSchema.parse(args.data);
+    const parsedData = TransactionLedgerCreateSchema.parse(args.data);
 
     const userId = assertNotNull(
       args.context.user?.id,
@@ -45,14 +45,15 @@ export class TransactionLedger {
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
         const payload = {
-          concept: args.data.concept,
-          description: args.data.description,
-          currency: args.data.currency,
-          amount_cents: args.data.amount_cents,
-          transacted_at: args.data.transacted_at,
-          type: args.data.type,
+          concept: parsedData.concept,
+          description: parsedData.description,
+          currency: parsedData.currency,
+          amount_cents: parsedData.amount_cents,
+          transacted_at: parsedData.transacted_at,
+          type: parsedData.type,
 
-          category_id: args.data.category_id,
+          user_id: userId,
+          category_id: parsedData.category_id,
         };
 
         const [transactionLedger] = await trx<TransactionLedger>(
@@ -63,7 +64,7 @@ export class TransactionLedger {
           trx,
           context: args.context,
           data: {
-            object: 'category',
+            object: 'transaction_ledger',
             object_id: assertNotNull(
               transactionLedger?.id,
               'Transaction ledger could not be created',
@@ -80,13 +81,13 @@ export class TransactionLedger {
     );
 
     return {
-      category: trxResult.transactionLedger,
+      transactionLedger: trxResult.transactionLedger,
     };
   }
 }
 
-const CurrencyEnum = z.enum(['COP', 'USD']);
-const TypeEnum = z.enum(['income', 'expense']);
+export const CurrencyEnum = z.enum(['COP', 'USD']);
+export const TypeEnum = z.enum(['income', 'expense']);
 
 const TransactionLedgerCreateSchema = z.object({
   concept: z.string().min(1).max(64),
