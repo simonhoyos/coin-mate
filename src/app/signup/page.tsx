@@ -4,6 +4,7 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,6 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
-import { redirect } from 'next/navigation';
 
 const SignUpFormSchema = z
   .object({
