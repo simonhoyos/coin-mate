@@ -119,11 +119,30 @@ const getTransactionLedgerById = createLoader(
   async (args: { context: IContext; keys: readonly string[] }) => {
     const transactions = (await args.context.services
       .knex<TransactionLedger>('transaction_ledger')
-      .select(['transaction_ledger.id', 'transaction_ledger.user_id'])
+      .select([
+        'transaction_ledger.id',
+
+        'transaction_ledger.concept',
+        'transaction_ledger.description',
+        'transaction_ledger.currency',
+        'transaction_ledger.amount_cents',
+        'transaction_ledger.transacted_at',
+
+        'transaction_ledger.category_id',
+
+        'transaction_ledger.user_id',
+      ])
       .whereIn('id', args.keys)
       .whereNull('archived_at')) as unknown as Pick<
       TransactionLedger,
-      'id' | 'user_id'
+      | 'id'
+      | 'concept'
+      | 'description'
+      | 'currency'
+      | 'amount_cents'
+      | 'transacted_at'
+      | 'category_id'
+      | 'user_id'
     >[];
 
     return args.keys.map(

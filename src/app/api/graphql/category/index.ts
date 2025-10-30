@@ -10,6 +10,10 @@ export const typeDefs = `#graphql
     description: String
   }
 
+  type CategoryConnection {
+    edges: [Category]
+  }
+
   input CategoryCreateInput {
     name: String!
     description: String
@@ -23,10 +27,6 @@ export const typeDefs = `#graphql
 
   input CategoryDeleteInput {
     id: UUID!
-  }
-
-  type CategoryConnection {
-    edges: [Category]
   }
 
   extend type Query {

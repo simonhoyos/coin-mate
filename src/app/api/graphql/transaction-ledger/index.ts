@@ -1,5 +1,10 @@
+import { compact } from 'lodash';
 import type { IContext } from '@/lib/types';
-import { CurrencyEnum, TransactionLedger, TypeEnum } from '@/models/transaction-ledger';
+import {
+  CurrencyEnum,
+  TransactionLedger,
+  TypeEnum,
+} from '@/models/transaction-ledger';
 
 export const typeDefs = `#graphql
   type TransactionLedger {
@@ -14,6 +19,10 @@ export const typeDefs = `#graphql
     category: Category
   }
 
+  type TransactionLedgerConnection {
+    edges: [TransactionLedger]
+  }
+
   input TransactionLedgerCreateInput {
     concept: String!
     description: String
@@ -25,24 +34,92 @@ export const typeDefs = `#graphql
     category_id: UUID
   }
 
+  extend type Query {
+    transactionList: TransactionLedgerConnection
+  }
+
   extend type Mutation {
     transactionLedgerCreate(input: TransactionLedgerCreateInput!): TransactionLedger
   }
 `;
 
 export const resolvers = {
-  Mutation: {
-    async transactionLedgerCreate(_parent: never, args: {
-      input: {
-        concept: string;
-        description: string | undefined;
-        currency: string;
-        amount_cents: number;
-        transacted_at: string;
-        type: string;
-        category_id: string;
+  TransactionLedger: {
+    concept: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then(
+        (transaction) => transaction?.concept,
+      ),
+
+    description: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then(
+        (transaction) => transaction?.description,
+      ),
+
+    currency: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then(
+        (transaction) => transaction?.currency,
+      ),
+
+    amount_cents: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then(
+        (transaction) => transaction?.amount_cents,
+      ),
+
+    transacted_at: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then(
+        (transaction) => transaction?.transacted_at,
+      ),
+
+    category: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then((transaction) =>
+        transaction?.category_id != null
+          ? { id: transaction.category_id }
+          : undefined,
+      ),
+  },
+
+  Query: {
+    async transactionList(_parent: never, _args: never, context: IContext) {
+      if (context.user == null) {
+        throw new Error('Unauthorized');
       }
-    }, context: IContext) {
+
+      const transactions = await context.services
+        .knex<TransactionLedger>('transaction_ledger')
+        .where({ user_id: context.user.id })
+        .orderBy('transacted_at', 'desc');
+
+      return {
+        edges: compact(
+          await Promise.all(
+            transactions.map((transaction) =>
+              TransactionLedger.gen({ context, id: transaction.id }).then(
+                (transaction) =>
+                  transaction != null ? { id: transaction.id } : undefined,
+              ),
+            ),
+          ),
+        ),
+      };
+    },
+  },
+
+  Mutation: {
+    async transactionLedgerCreate(
+      _parent: never,
+      args: {
+        input: {
+          concept: string;
+          description: string | undefined;
+          currency: string;
+          amount_cents: number;
+          transacted_at: string;
+          type: string;
+          category_id: string;
+        };
+      },
+      context: IContext,
+    ) {
       const {
         concept,
         description,
