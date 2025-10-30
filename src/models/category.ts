@@ -25,7 +25,9 @@ export class Category {
       id: args.id,
     });
 
-    return record?.user_id === args.context.user?.id ? record : null;
+    return record?.user_id != null && record.user_id === args.context.user?.id
+      ? record
+      : null;
   }
 
   static async create(args: {

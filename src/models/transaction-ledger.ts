@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
+import { createLoader } from '@/lib/dataloader';
 import type { IContext } from '@/lib/types';
 import { Audit } from './audit';
 import { User } from './user';
@@ -21,6 +22,17 @@ export class TransactionLedger {
   category_id!: string;
 
   archived_at?: Date | string | null;
+
+  static async gen(args: { context: IContext; id: string }) {
+    const record = await getTransactionLedgerById({
+      context: args.context,
+      id: args.id,
+    });
+
+    return record?.user_id != null && record.user_id === args.context.user?.id
+      ? record
+      : null;
+  }
 
   static async create(args: {
     context: IContext;
@@ -102,3 +114,20 @@ const TransactionLedgerCreateSchema = z.object({
   type: TypeEnum,
   category_id: z.uuid(),
 });
+
+const getTransactionLedgerById = createLoader(
+  async (args: { context: IContext; keys: readonly string[] }) => {
+    const transactions = (await args.context.services
+      .knex<TransactionLedger>('transaction_ledger')
+      .select(['transaction_ledger.id', 'transaction_ledger.user_id'])
+      .whereIn('id', args.keys)
+      .whereNull('archived_at')) as unknown as Pick<
+      TransactionLedger,
+      'id' | 'user_id'
+    >[];
+
+    return args.keys.map(
+      (key) => transactions.find((t) => t.id === key) || null,
+    );
+  },
+);
