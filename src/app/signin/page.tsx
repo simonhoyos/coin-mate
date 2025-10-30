@@ -1,7 +1,7 @@
 'use client';
 
 import { gql } from '@apollo/client';
-import { useMutation } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -29,6 +29,22 @@ const SignInFormSchema = z.object({
 });
 
 export default function SignInPage() {
+  const meQuery = useQuery<{
+    me?: {
+      id: string;
+    };
+  }>(
+    gql`
+      query MeQueryFromSignIn {
+        me {
+          id
+        }
+      }
+    `
+  )
+
+  const meData = meQuery.data;
+
   const [signInMutation, signInState] = useMutation<
     {
       userSignIn: {
@@ -85,6 +101,10 @@ export default function SignInPage() {
 
     signInState.data?.userSignIn.token != null &&
       redirect('/dashboard/expenses');
+  }
+
+  if (meData?.me?.id != null) {
+    redirect('/dashboard/expenses');
   }
 
   return (
