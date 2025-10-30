@@ -1,3 +1,5 @@
+'use client';
+
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { redirect } from 'next/navigation';
@@ -26,7 +28,11 @@ export default function DashboardLayout(
 
   const meData = meQuery.data;
 
-  if (meData?.me?.id != null) {
+  if (
+    meQuery.dataState === 'complete' &&
+    meQuery.loading !== true &&
+    meData?.me?.id == null
+  ) {
     redirect('/signin');
   }
 
