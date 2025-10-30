@@ -44,8 +44,8 @@ export default function SignUpPage() {
           id
         }
       }
-    `
-  )
+    `,
+  );
 
   const meData = meQuery.data;
   const [signUpMutation, signUpState] = useMutation<

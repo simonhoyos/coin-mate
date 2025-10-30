@@ -40,8 +40,8 @@ export default function SignInPage() {
           id
         }
       }
-    `
-  )
+    `,
+  );
 
   const meData = meQuery.data;
 
