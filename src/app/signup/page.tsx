@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
+import { redirect } from 'next/navigation';
 
 const SignUpFormSchema = z
   .object({
@@ -83,6 +84,9 @@ mutation UserSignUp($input: UserSignUpInput!) {
         },
       },
     });
+
+    signUpState.data?.userSignUp.token != null &&
+      redirect('/dashboard/expenses');
   }
 
   return (
