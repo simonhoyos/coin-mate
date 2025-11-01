@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { assertNotNull } from '@/lib/assert';
 import { createSession } from '@/lib/session';
 import type { IContext } from '@/lib/types';
@@ -44,10 +45,13 @@ export const resolvers = {
 
   Query: {
     async me(_parent: never, _args: never, context: IContext) {
-      const userId = assertNotNull(
-        context.user?.id,
-        'User must be authenticated to fetch own data',
-      );
+      const userId = context.user?.id;
+
+      if (userId == null) {
+        throw new GraphQLError('Unauthorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
 
       return User.gen({ context, id: userId }).then((user) =>
         user?.id != null ? { id: user.id } : undefined,

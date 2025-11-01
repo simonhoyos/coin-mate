@@ -1,6 +1,6 @@
 'use client';
 
-import { gql } from '@apollo/client';
+import { CombinedGraphQLErrors, gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
@@ -26,13 +26,9 @@ export default function DashboardLayout(
     `,
   );
 
-  const meData = meQuery.data;
+  const meError = meQuery.error;
 
-  if (
-    meQuery.dataState === 'complete' &&
-    meQuery.loading !== true &&
-    meData?.me?.id == null
-  ) {
+  if (meError != null && CombinedGraphQLErrors.is(meError)) {
     redirect('/signin');
   }
 
