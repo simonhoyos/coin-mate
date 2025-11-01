@@ -56,6 +56,38 @@ export default function ExpensesPage() {
   const [open, setOpen] = React.useState(false);
   const [dateOpen, setDateOpen] = React.useState(false);
 
+  const expenseListQuery = useQuery<{
+    transactionList?: {
+      edges?: {
+        id: string;
+
+        concept?: string;
+        description?: string;
+        currency?: string;
+        amount_cents?: number;
+        transacted_at?: string;
+      }[];
+    };
+  }>(
+    gql`
+      query ExpenseListQuery {
+        transactionList {
+          edges {
+            id
+
+            concept
+            description
+            currency
+            amount_cents
+            transacted_at
+          }
+        }
+      }
+    `,
+  );
+
+  const expenseListData = expenseListQuery.data?.transactionList?.edges ?? [];
+
   const categoryListQuery = useQuery<{
     categoryList?: {
       edges?: {
@@ -129,7 +161,6 @@ export default function ExpensesPage() {
   async function transactionLedgerCreateSubmit(
     data: z.infer<typeof TransactionLedgerCreateFormSchema>,
   ) {
-    console.log('Submitting', data);
     await transactionLedgerCreateMutation({
       variables: {
         input: {
@@ -374,6 +405,29 @@ export default function ExpensesPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <section className="flex flex-1 flex-col gap-4">
+        {expenseListData.map((expense) => (
+          <div
+            key={expense.id}
+            className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
+          >
+            <div className="flex justify-between w-full">
+              <div className="flex flex-col gap-2">
+                <h2 className="font-bold">{expense.concept}</h2>
+                {(expense.description ?? '') !== '' && (
+                  <p>{expense.description}</p>
+                )}
+              </div>
+              <div>
+                <p>
+                  {expense.currency}$ {expense.amount_cents}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
     </div>
   );
 }
