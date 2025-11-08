@@ -4,6 +4,7 @@ import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCirclePlus } from '@tabler/icons-react';
+import { format } from 'date-fns';
 import { ChevronDownIcon } from 'lucide-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -37,19 +38,28 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const CurrencyEnum = z.enum(['COP', 'USD']);
-const TypeEnum = z.enum(['expense', 'income']);
+const CurrencyEnum = z.enum(['COP', 'USD'], 'Currency must be COP or USD');
+const TypeEnum = z.enum(['expense', 'income'], 'Select a valid type');
+
 const TransactionLedgerCreateFormSchema = z.object({
-  concept: z.string().min(1).max(64),
-  description: z.string().max(256).optional(),
+  concept: z
+    .string()
+    .min(1, 'Concept is required')
+    .max(64, 'Maximum 64 characters'),
+  description: z.string().max(256, 'Maximum 256 characters').optional(),
   currency: CurrencyEnum,
-  amount: z.preprocess((arg: string) => {
-    console.log('args', arg);
-    return parseFloat(arg);
-  }, z.number()),
-  transacted_at: z.string(),
-  type: z.enum(['income', 'expense']),
-  category_id: z.uuid(),
+  amount: z
+    .string()
+    .min(1, 'Amount is required')
+    .regex(/^(-?\d+)\.?/, 'Only numbers and . allowed')
+    .refine((value) => value.split('.').length <= 2, 'Invalid amount format')
+    .refine(
+      (value) => (value.match(/\./g) || []).length <= 1,
+      'Maximum two decimal places allowed',
+    ),
+  transacted_at: z.string().min(1, 'Date is required'),
+  type: TypeEnum,
+  category_id: z.uuid('Select a valid category'),
 });
 
 export default function ExpensesPage() {
@@ -145,7 +155,7 @@ export default function ExpensesPage() {
       concept: '',
       description: '',
       currency: 'COP' as const,
-      amount: '0',
+      amount: '',
       transacted_at: new Date().toISOString(),
       type: 'expense' as const,
       category_id: '',
@@ -156,6 +166,8 @@ export default function ExpensesPage() {
   const transactionLedgerCreateForm = useForm({
     resolver: zodResolver(TransactionLedgerCreateFormSchema),
     defaultValues: transactionLedgerCreateDefaultValues,
+    mode: 'onBlur',
+    reValidateMode: 'onBlur',
   });
 
   async function transactionLedgerCreateSubmit(
@@ -167,8 +179,9 @@ export default function ExpensesPage() {
           concept: data.concept,
           description: data.description,
           currency: data.currency,
-          amount_cents: data.amount,
-          transacted_at: data.transacted_at,
+          // FIX: move parsing to server
+          amount_cents: parseInt(data.amount.replace('.', ''), 10),
+          transacted_at: format(new Date(data.transacted_at), 'yyyy-MM-dd'),
           type: data.type,
           category_id: data.category_id,
         },
@@ -273,7 +286,55 @@ export default function ExpensesPage() {
                           {...field}
                           id="amount"
                           aria-invalid={fieldState.invalid}
-                          type="number"
+                          type="text"
+                          onChange={(e) => {
+                            const value = e.target.value ?? '';
+
+                            if (/^\d*\.?(\d{0,2})?$/.test(value)) {
+                              field.onChange(value);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            let result = e.target.value ?? '0';
+
+                            if (
+                              result === '' ||
+                              /^\d*\.?(\d{0,2})?$/.test(result) !== true
+                            ) {
+                              field.onChange(result);
+                              transactionLedgerCreateForm.trigger('amount');
+                              return;
+                            }
+
+                            result = result.replace(/^0+/, '');
+
+                            if (result.startsWith('.')) {
+                              result = `0${result}`;
+                            }
+
+                            const dotCount = (result.match(/\./g) || []).length;
+
+                            if (dotCount <= 0) {
+                              result += '.';
+                            }
+
+                            const decimalPlaces =
+                              result.split('.').at(1)?.length ?? 0;
+                            const missingDecimalPlaces = 2 - decimalPlaces;
+
+                            if (
+                              missingDecimalPlaces > 0 &&
+                              missingDecimalPlaces <= 2
+                            ) {
+                              result =
+                                result + '0'.repeat(missingDecimalPlaces);
+                            }
+
+                            result = result.slice(0, result.indexOf('.') + 3);
+
+                            field.onChange(result);
+                            transactionLedgerCreateForm.trigger('amount');
+                          }}
                         />
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />

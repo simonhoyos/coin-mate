@@ -8,11 +8,10 @@ const nextConfig: NextConfig = {
       {
         source: '/',
         destination: '/dashboard',
-        permanent: true
-      }
-    ]
+        permanent: true,
+      },
+    ];
   },
-
 };
 
 export default nextConfig;
