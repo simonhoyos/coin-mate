@@ -3,7 +3,7 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IconCheck } from '@tabler/icons-react';
+import { IconCheck, IconEye, IconEyeOff } from '@tabler/icons-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import React from 'react';
@@ -19,6 +19,12 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group';
 import { Logo } from '@/components/ui/logo';
 import { cn } from '@/lib/utils';
 
@@ -26,12 +32,14 @@ const SignUpFormSchema = z
   .object({
     email: z.email('Invalid email address').nonempty('Email is required'),
     password: z
-      .string('Password is required')
+      .string('Invalid password')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#\-_+=.^])[A-Za-z\d@$!%*?&#\-_+=.^]{8,64}$/,
         'One or more password requirements not met',
       ),
-    confirmPassword: z.string('Please confirm your password'),
+    confirmPassword: z
+      .string('Invalid confirm password')
+      .min(1, 'Confirm password is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -39,6 +47,9 @@ const SignUpFormSchema = z
   });
 
 export default function SignUpPage() {
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
   const meQuery = useQuery<{
     me?: {
       id: string;
@@ -155,12 +166,13 @@ export default function SignUpPage() {
                     name="email"
                     control={form.control}
                     render={({ field, fieldState }) => (
-                      <Field>
+                      <Field data-invalid={fieldState.invalid}>
                         <FieldLabel htmlFor="email">Email</FieldLabel>
                         <Input
                           {...field}
                           id="email"
                           type="email"
+                          aria-invalid={fieldState.invalid}
                           placeholder="m@example.com"
                           required
                         />
@@ -174,25 +186,42 @@ export default function SignUpPage() {
                     name="password"
                     control={form.control}
                     render={({ field, fieldState }) => (
-                      <Field>
+                      <Field data-invalid={fieldState.invalid}>
                         <div className="flex items-center">
                           <FieldLabel htmlFor="password">Password</FieldLabel>
                         </div>
-                        <Input
-                          {...field}
-                          id="password"
-                          type="password"
-                          onChange={(e) => {
-                            const value = e.target.value;
+                        <InputGroup>
+                          <InputGroupInput
+                            {...field}
+                            id="password"
+                            type={showPassword === true ? 'text' : 'password'}
+                            aria-invalid={fieldState.invalid}
+                            onChange={(e) => {
+                              const value = e.target.value;
 
-                            field.onChange(value);
+                              field.onChange(value);
 
-                            if (form.getValues('confirmPassword') !== '') {
-                              form.trigger('confirmPassword');
-                            }
-                          }}
-                          required
-                        />
+                              if (form.getValues('confirmPassword') !== '') {
+                                form.trigger('confirmPassword');
+                              }
+                            }}
+                            required
+                          />
+                          <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                              variant="ghost"
+                              size="icon-xs"
+                              className="cursor-pointer"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                            >
+                              {showPassword === true ? (
+                                <IconEye />
+                              ) : (
+                                <IconEyeOff />
+                              )}
+                            </InputGroupButton>
+                          </InputGroupAddon>
+                        </InputGroup>
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
@@ -264,18 +293,39 @@ export default function SignUpPage() {
                     name="confirmPassword"
                     control={form.control}
                     render={({ field, fieldState }) => (
-                      <Field>
+                      <Field data-invalid={fieldState.invalid}>
                         <div className="flex items-center">
                           <FieldLabel htmlFor="confirmPassword">
                             Confirm password
                           </FieldLabel>
                         </div>
-                        <Input
-                          {...field}
-                          id="confirmPassword"
-                          type="password"
-                          required
-                        />
+                        <InputGroup>
+                          <InputGroupInput
+                            {...field}
+                            id="confirmPassword"
+                            type={
+                              showConfirmPassword === true ? 'text' : 'password'
+                            }
+                            aria-invalid={fieldState.invalid}
+                            required
+                          />
+                          <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                              variant="ghost"
+                              size="icon-xs"
+                              className="cursor-pointer"
+                              onClick={() =>
+                                setShowConfirmPassword((prev) => !prev)
+                              }
+                            >
+                              {showConfirmPassword === true ? (
+                                <IconEye />
+                              ) : (
+                                <IconEyeOff />
+                              )}
+                            </InputGroupButton>
+                          </InputGroupAddon>
+                        </InputGroup>
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}

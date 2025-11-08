@@ -3,6 +3,7 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import React from 'react';
@@ -18,17 +19,22 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group';
 import { Logo } from '@/components/ui/logo';
 
 const SignInFormSchema = z.object({
   email: z.email('Invalid email address').nonempty('Email is required'),
-  password: z
-    .string('Password is required')
-    .min(8, 'Password should be at least 8 characters')
-    .max(64, 'Password should be at most 64 characters'),
+  password: z.string('Invalid password').min(1, 'Password is required'),
 });
 
 export default function SignInPage() {
+  const [showPassword, setShowPassword] = React.useState(false);
+
   const meQuery = useQuery<{
     me?: {
       id: string;
@@ -83,9 +89,10 @@ export default function SignInPage() {
     [],
   );
 
-  const form = useForm({
+  const signInForm = useForm({
     resolver: zodResolver(SignInFormSchema),
     mode: 'onBlur',
+    reValidateMode: 'onBlur',
     defaultValues,
   });
 
@@ -120,11 +127,11 @@ export default function SignInPage() {
               <CardTitle className="text-xl">Welcome back</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
+              <form onSubmit={signInForm.handleSubmit(onSubmit)}>
                 <FieldGroup>
                   <Controller
                     name="email"
-                    control={form.control}
+                    control={signInForm.control}
                     render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
                         <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -143,24 +150,41 @@ export default function SignInPage() {
                   />
                   <Controller
                     name="password"
-                    control={form.control}
+                    control={signInForm.control}
                     render={({ field, fieldState }) => (
-                      <Field>
+                      <Field data-invalid={fieldState.invalid}>
                         <div className="flex items-center">
                           <FieldLabel htmlFor="password">Password</FieldLabel>
                           <Link
                             href="/password-reset"
-                            className="ml-auto text-sm underline-offset-4 hover:underline"
+                            className="ml-auto text-sm text-foreground underline-offset-4 hover:underline"
                           >
                             Forgot your password?
                           </Link>
                         </div>
-                        <Input
-                          {...field}
-                          id="password"
-                          aria-invalid={fieldState.invalid}
-                          type="password"
-                        />
+                        <InputGroup>
+                          <InputGroupInput
+                            {...field}
+                            id="password"
+                            type={showPassword === true ? 'text' : 'password'}
+                            aria-invalid={fieldState.invalid}
+                            required
+                          />
+                          <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                              variant="ghost"
+                              size="icon-xs"
+                              className="cursor-pointer"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                            >
+                              {showPassword === true ? (
+                                <IconEye />
+                              ) : (
+                                <IconEyeOff />
+                              )}
+                            </InputGroupButton>
+                          </InputGroupAddon>
+                        </InputGroup>
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
