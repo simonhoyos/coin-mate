@@ -7,7 +7,7 @@ import { IconCheck, IconEye, IconEyeOff } from '@tabler/icons-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import React from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -143,6 +143,11 @@ export default function SignUpPage() {
     form.formState.isReady,
   ]);
 
+  const passwordValue = useWatch({
+    control: form.control,
+    name: 'password',
+  });
+
   if (meData?.me?.id != null) {
     redirect('/dashboard/expenses');
   }
@@ -225,67 +230,6 @@ export default function SignUpPage() {
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
-                        <div>
-                          <div
-                            className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
-                              field.value.length >= 8 &&
-                                field.value.length <= 64
-                                ? 'text-green-600'
-                                : undefined,
-                            )}
-                          >
-                            <IconCheck className="w-4" />
-                            <p>Between 8 and 64 characters</p>
-                          </div>
-                          <div
-                            className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
-                              /[A-Z]/.test(field.value)
-                                ? 'text-green-600'
-                                : undefined,
-                            )}
-                          >
-                            <IconCheck className="w-4" />
-                            <p>Must contain at least one uppercase letter</p>
-                          </div>
-                          <div
-                            className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
-                              /[a-z]/.test(field.value)
-                                ? 'text-green-600'
-                                : undefined,
-                            )}
-                          >
-                            <IconCheck className="w-4" />
-                            <p>Must contain at least one lowercase letter</p>
-                          </div>
-                          <div
-                            className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
-                              /[0-9]/.test(field.value)
-                                ? 'text-green-600'
-                                : undefined,
-                            )}
-                          >
-                            <IconCheck className="w-4" />
-                            <p>Must contain at least one number</p>
-                          </div>
-                          <div
-                            className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
-                              /[@$!%*?&#\-_+=.^]/.test(field.value)
-                                ? 'text-green-600'
-                                : undefined,
-                            )}
-                          >
-                            <IconCheck className="w-4" />
-                            <p>
-                              Must contain at least one special character
-                              (@$!%*?&amp;#-_+=.^)
-                            </p>
-                          </div>
-                        </div>
                       </Field>
                     )}
                   />
@@ -329,6 +273,66 @@ export default function SignUpPage() {
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
+                        <div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              passwordValue.length >= 8 && passwordValue.length <= 64
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>Between 8 and 64 characters</p>
+                          </div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              /[A-Z]/.test(passwordValue)
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>Must contain at least one uppercase letter</p>
+                          </div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              /[a-z]/.test(passwordValue)
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>Must contain at least one lowercase letter</p>
+                          </div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              /[0-9]/.test(passwordValue)
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>Must contain at least one number</p>
+                          </div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              /[@$!%*?&#\-_+=.^]/.test(passwordValue)
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>
+                              Must contain at least one special character
+                              (@$!%*?&amp;#-_+=.^)
+                            </p>
+                          </div>
+                        </div>
                       </Field>
                     )}
                   />
