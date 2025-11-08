@@ -185,6 +185,11 @@ export default function ExpensesPage() {
         },
       },
     });
+
+    await expenseListQuery.refetch();
+
+    setOpen(false);
+    transactionLedgerCreateForm.reset();
   }
 
   return (

@@ -92,12 +92,11 @@ export default function SignInPage() {
   const signInForm = useForm({
     resolver: zodResolver(SignInFormSchema),
     mode: 'onBlur',
-    reValidateMode: 'onBlur',
     defaultValues,
   });
 
   async function onSubmit(data: z.infer<typeof SignInFormSchema>) {
-    await signInMutation({
+    const { data: userSignInData } = await signInMutation({
       variables: {
         input: {
           email: data.email,
@@ -106,8 +105,9 @@ export default function SignInPage() {
       },
     });
 
-    signInState.data?.userSignIn.token != null &&
+    if (userSignInData?.userSignIn.token != null) {
       redirect('/dashboard/expenses');
+    }
   }
 
   if (meData?.me?.id != null) {

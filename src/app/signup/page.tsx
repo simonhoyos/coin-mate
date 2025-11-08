@@ -108,12 +108,11 @@ export default function SignUpPage() {
   const form = useForm({
     resolver: zodResolver(SignUpFormSchema),
     mode: 'onBlur',
-    reValidateMode: 'onBlur',
     defaultValues,
   });
 
   async function onSubmit(data: z.infer<typeof SignUpFormSchema>) {
-    await signUpMutation({
+    const { data: userSignUpData } = await signUpMutation({
       variables: {
         input: {
           email: data.email,
@@ -123,25 +122,10 @@ export default function SignUpPage() {
       },
     });
 
-    signUpState.data?.userSignUp.token != null &&
+    if (userSignUpData?.userSignUp.token != null) {
       redirect('/dashboard/expenses');
+    }
   }
-
-  const formInProgress = React.useMemo(() => {
-    return (
-      signUpState.loading === true ||
-      form.formState.isSubmitting === true ||
-      form.formState.isValidating === true ||
-      form.formState.isValid !== true ||
-      form.formState.isReady !== true
-    );
-  }, [
-    signUpState.loading,
-    form.formState.isSubmitting,
-    form.formState.isValidating,
-    form.formState.isValid,
-    form.formState.isReady,
-  ]);
 
   const passwordValue = useWatch({
     control: form.control,
@@ -338,7 +322,7 @@ export default function SignUpPage() {
                     )}
                   />
                   <Field>
-                    <Button type="submit" disabled={formInProgress}>
+                    <Button type="submit" disabled={signUpState.loading === true}>
                       Register
                     </Button>
                     <FieldDescription className="text-center">
