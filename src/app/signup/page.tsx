@@ -3,8 +3,10 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { IconCheck } from '@tabler/icons-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -18,18 +20,22 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
+import { cn } from '@/lib/utils';
 
 const SignUpFormSchema = z
   .object({
     email: z.email('Invalid email address').nonempty('Email is required'),
     password: z
       .string('Password is required')
-      .min(8, 'Password should be at least 8 characters')
-      .max(64, 'Password should be at most 64 characters'),
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#\-_+=.^])[A-Za-z\d@$!%*?&#\-_+=.^]{8,64}$/,
+        'One or more password requirements not met',
+      ),
     confirmPassword: z.string('Please confirm your password'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
+    path: ['confirmPassword'],
   });
 
 export default function SignUpPage() {
@@ -79,14 +85,20 @@ export default function SignUpPage() {
     `,
   );
 
-  const form = useForm({
-    resolver: zodResolver(SignUpFormSchema),
-    mode: 'onBlur',
-    defaultValues: {
+  const defaultValues = React.useMemo(
+    () => ({
       email: '',
       password: '',
       confirmPassword: '',
-    },
+    }),
+    [],
+  );
+
+  const form = useForm({
+    resolver: zodResolver(SignUpFormSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onBlur',
+    defaultValues,
   });
 
   async function onSubmit(data: z.infer<typeof SignUpFormSchema>) {
@@ -103,6 +115,22 @@ export default function SignUpPage() {
     signUpState.data?.userSignUp.token != null &&
       redirect('/dashboard/expenses');
   }
+
+  const formInProgress = React.useMemo(() => {
+    return (
+      signUpState.loading === true ||
+      form.formState.isSubmitting === true ||
+      form.formState.isValidating === true ||
+      form.formState.isValid !== true ||
+      form.formState.isReady !== true
+    );
+  }, [
+    signUpState.loading,
+    form.formState.isSubmitting,
+    form.formState.isValidating,
+    form.formState.isValid,
+    form.formState.isReady,
+  ]);
 
   if (meData?.me?.id != null) {
     redirect('/dashboard/expenses');
@@ -154,11 +182,81 @@ export default function SignUpPage() {
                           {...field}
                           id="password"
                           type="password"
+                          onChange={(e) => {
+                            const value = e.target.value;
+
+                            field.onChange(value);
+
+                            if (form.getValues('confirmPassword') !== '') {
+                              form.trigger('confirmPassword');
+                            }
+                          }}
                           required
                         />
                         {fieldState.invalid && (
                           <FieldError errors={[fieldState.error]} />
                         )}
+                        <div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              field.value.length >= 8 &&
+                                field.value.length <= 64
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>Between 8 and 64 characters</p>
+                          </div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              /[A-Z]/.test(field.value)
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>Must contain at least one uppercase letter</p>
+                          </div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              /[a-z]/.test(field.value)
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>Must contain at least one lowercase letter</p>
+                          </div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              /[0-9]/.test(field.value)
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>Must contain at least one number</p>
+                          </div>
+                          <div
+                            className={cn(
+                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              /[@$!%*?&#\-_+=.^]/.test(field.value)
+                                ? 'text-green-600'
+                                : undefined,
+                            )}
+                          >
+                            <IconCheck className="w-4" />
+                            <p>
+                              Must contain at least one special character
+                              (@$!%*?&amp;#-_+=.^)
+                            </p>
+                          </div>
+                        </div>
                       </Field>
                     )}
                   />
@@ -185,10 +283,7 @@ export default function SignUpPage() {
                     )}
                   />
                   <Field>
-                    <Button
-                      type="submit"
-                      disabled={signUpState.loading === true}
-                    >
+                    <Button type="submit" disabled={formInProgress}>
                       Register
                     </Button>
                     <FieldDescription className="text-center">
