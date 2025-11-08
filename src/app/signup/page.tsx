@@ -277,7 +277,8 @@ export default function SignUpPage() {
                           <div
                             className={cn(
                               'flex flex-row items-center gap-2 text-xs text-gray-600',
-                              passwordValue.length >= 8 && passwordValue.length <= 64
+                              passwordValue.length >= 8 &&
+                                passwordValue.length <= 64
                                 ? 'text-green-600'
                                 : undefined,
                             )}

@@ -1,10 +1,6 @@
 import { compact } from 'lodash';
 import type { IContext } from '@/lib/types';
-import {
-  CurrencyEnum,
-  TransactionLedger,
-  TypeEnum,
-} from '@/models/transaction-ledger';
+import { TransactionLedger } from '@/models/transaction-ledger';
 
 export const typeDefs = `#graphql
   type TransactionLedger {
@@ -27,7 +23,7 @@ export const typeDefs = `#graphql
     concept: String!
     description: String
     currency: String!
-    amount_cents: Int!
+    amount: String!
     transacted_at: String!
     type: String!
 
@@ -112,7 +108,7 @@ export const resolvers = {
           concept: string;
           description: string | undefined;
           currency: string;
-          amount_cents: number;
+          amount: string;
           transacted_at: string;
           type: string;
           category_id: string;
@@ -124,7 +120,7 @@ export const resolvers = {
         concept,
         description,
         currency,
-        amount_cents,
+        amount,
         transacted_at,
         type,
         category_id,
@@ -135,10 +131,10 @@ export const resolvers = {
         data: {
           concept,
           description,
-          currency: CurrencyEnum.parse(currency),
-          amount_cents,
+          currency,
+          amount_cents: amount,
           transacted_at,
-          type: TypeEnum.parse(type),
+          type,
 
           category_id,
         },

@@ -4,7 +4,6 @@ import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCirclePlus } from '@tabler/icons-react';
-import { format } from 'date-fns';
 import { ChevronDownIcon } from 'lucide-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -134,7 +133,7 @@ export default function ExpensesPage() {
           concept: string;
           description: string | undefined;
           currency: string;
-          amount_cents: number;
+          amount: string;
           transacted_at: string;
           type: string;
           category_id: string;
@@ -179,9 +178,8 @@ export default function ExpensesPage() {
           concept: data.concept,
           description: data.description,
           currency: data.currency,
-          // FIX: move parsing to server
-          amount_cents: parseInt(data.amount.replace('.', ''), 10),
-          transacted_at: format(new Date(data.transacted_at), 'yyyy-MM-dd'),
+          amount: data.amount,
+          transacted_at: data.transacted_at,
           type: data.type,
           category_id: data.category_id,
         },
@@ -299,7 +297,7 @@ export default function ExpensesPage() {
 
                             if (
                               result === '' ||
-                              /^\d*\.?(\d{0,2})?$/.test(result) !== true
+                              /^\d+\.?(\d{0,2})?$/.test(result) !== true
                             ) {
                               field.onChange(result);
                               transactionLedgerCreateForm.trigger('amount');
@@ -482,7 +480,7 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <p>
-                  {expense.currency}$ {expense.amount_cents}
+                  {expense.currency}$ {(expense.amount_cents ?? 0) / 100}
                 </p>
               </div>
             </div>

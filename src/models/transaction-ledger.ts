@@ -1,3 +1,4 @@
+import { addHours, format } from 'date-fns';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import { createLoader } from '@/lib/dataloader';
@@ -15,7 +16,7 @@ export class TransactionLedger {
   description?: string | undefined;
   currency!: string;
   amount_cents!: number;
-  transacted_at!: Date | string;
+  transacted_at!: string;
   type!: string;
 
   user_id!: string;
@@ -36,7 +37,16 @@ export class TransactionLedger {
 
   static async create(args: {
     context: IContext;
-    data: z.infer<typeof TransactionLedgerCreateSchema>;
+    data: {
+      concept: string;
+      description: string | undefined;
+      currency: string;
+      amount_cents: string;
+      transacted_at: string;
+      type: string;
+
+      category_id: string;
+    };
   }) {
     const parsedData = TransactionLedgerCreateSchema.parse(args.data);
 
@@ -105,12 +115,17 @@ const TransactionLedgerCreateSchema = z.object({
   concept: z.string().min(1).max(64),
   description: z.string().max(256).optional(),
   currency: CurrencyEnum,
-  amount_cents: z.number().int(),
-  transacted_at: z.preprocess((arg) => {
-    if (typeof arg === 'string' || arg instanceof Date) {
-      return new Date(arg);
-    }
-  }, z.date()),
+  amount_cents: z
+    .string()
+    .regex(/^\d+\.\d{2}$/, 'Unsupported amount format, expected format: 0.00')
+    .transform((value) => parseInt(value.replace('.', ''), 10))
+    .pipe(z.number()),
+  transacted_at: z
+    .string()
+    .transform((value) =>
+      addHours(format(new Date(value), 'yyyy-MM-dd'), 12).toISOString(),
+    )
+    .pipe(z.iso.datetime()),
   type: TypeEnum,
   category_id: z.uuid(),
 });
