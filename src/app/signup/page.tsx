@@ -322,7 +322,10 @@ export default function SignUpPage() {
                     )}
                   />
                   <Field>
-                    <Button type="submit" disabled={signUpState.loading === true}>
+                    <Button
+                      type="submit"
+                      disabled={signUpState.loading === true}
+                    >
                       Register
                     </Button>
                     <FieldDescription className="text-center">

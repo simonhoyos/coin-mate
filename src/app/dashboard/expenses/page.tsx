@@ -4,6 +4,7 @@ import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCirclePlus } from '@tabler/icons-react';
+import { groupBy } from 'lodash';
 import { ChevronDownIcon } from 'lucide-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -66,7 +67,7 @@ export default function ExpensesPage() {
   const [dateOpen, setDateOpen] = React.useState(false);
 
   const expenseListQuery = useQuery<{
-    transactionList?: {
+    expenseList?: {
       edges?: {
         id: string;
 
@@ -80,7 +81,7 @@ export default function ExpensesPage() {
   }>(
     gql`
       query ExpenseListQuery {
-        transactionList {
+        expenseList {
           edges {
             id
 
@@ -95,7 +96,11 @@ export default function ExpensesPage() {
     `,
   );
 
-  const expenseListData = expenseListQuery.data?.transactionList?.edges ?? [];
+  const expenseListData = expenseListQuery.data?.expenseList?.edges ?? [];
+
+  const expenseListGroupedByDate = React.useMemo(() => {
+    return groupBy(expenseListData, 'transacted_at');
+  }, [expenseListData]);
 
   const categoryListQuery = useQuery<{
     categoryList?: {
@@ -471,26 +476,34 @@ export default function ExpensesPage() {
       </div>
 
       <section className="flex flex-1 flex-col gap-4">
-        {expenseListData.map((expense) => (
-          <div
-            key={expense.id}
-            className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
-          >
-            <div className="flex justify-between w-full">
-              <div className="flex flex-col gap-2">
-                <h2 className="font-bold">{expense.concept}</h2>
-                {(expense.description ?? '') !== '' && (
-                  <p>{expense.description}</p>
-                )}
-              </div>
-              <div>
-                <p>
-                  {expense.currency}$ {(expense.amount_cents ?? 0) / 100}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
+        {Object.entries(expenseListGroupedByDate).map(
+          ([groupDate, expenseList]) => (
+            <section key={groupDate} className="flex flex-col gap-4">
+              <h2 className="font-semibold text-lg">{groupDate}</h2>
+
+              {expenseList.map((expense) => (
+                <div
+                  key={expense.id}
+                  className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
+                >
+                  <div className="flex justify-between w-full">
+                    <div className="flex flex-col gap-2">
+                      <h2 className="font-bold">{expense.concept}</h2>
+                      {(expense.description ?? '') !== '' && (
+                        <p>{expense.description}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p>
+                        {expense.currency}$ {(expense.amount_cents ?? 0) / 100}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </section>
+          ),
+        )}
       </section>
     </div>
   );
