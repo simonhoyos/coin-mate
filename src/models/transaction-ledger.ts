@@ -109,7 +109,7 @@ export class TransactionLedger {
 }
 
 export const CurrencyEnum = z.enum(['COP', 'USD']);
-export const TypeEnum = z.enum(['income', 'expense']);
+export const TypeEnum = z.enum(['income', 'expense', 'saving']);
 
 const TransactionLedgerCreateSchema = z.object({
   concept: z.string().min(1).max(64),
@@ -142,6 +142,7 @@ const getTransactionLedgerById = createLoader(
         'transaction_ledger.currency',
         'transaction_ledger.amount_cents',
         'transaction_ledger.transacted_at',
+        'transaction_ledger.type',
 
         'transaction_ledger.category_id',
 
@@ -156,6 +157,7 @@ const getTransactionLedgerById = createLoader(
       | 'currency'
       | 'amount_cents'
       | 'transacted_at'
+      | 'type'
       | 'category_id'
       | 'user_id'
     >[];

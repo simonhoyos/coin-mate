@@ -62,6 +62,11 @@ const TransactionLedgerCreateFormSchema = z.object({
   category_id: z.uuid('Select a valid category'),
 });
 
+const moneyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'COP',
+});
+
 export default function ExpensesPage() {
   const [open, setOpen] = React.useState(false);
   const [dateOpen, setDateOpen] = React.useState(false);
@@ -76,6 +81,13 @@ export default function ExpensesPage() {
         currency?: string;
         amount_cents?: number;
         transacted_at?: string;
+        type?: string;
+
+        category?: {
+          id: string;
+
+          name?: string;
+        };
       }[];
     };
   }>(
@@ -90,6 +102,13 @@ export default function ExpensesPage() {
             currency
             amount_cents
             transacted_at
+            type
+
+            category {
+              id
+
+              name
+            }
           }
         }
       }
@@ -484,8 +503,11 @@ export default function ExpensesPage() {
               {expenseList.map((expense) => (
                 <div
                   key={expense.id}
-                  className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
+                  className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
                 >
+                  {(
+                    <p className="text-xs text-gray-800">{expense.category?.name} ({expense.type})</p>
+                  )}
                   <div className="flex justify-between w-full">
                     <div className="flex flex-col gap-2">
                       <h2 className="font-bold">{expense.concept}</h2>
@@ -495,7 +517,9 @@ export default function ExpensesPage() {
                     </div>
                     <div>
                       <p>
-                        {expense.currency}$ {(expense.amount_cents ?? 0) / 100}
+                        {moneyFormatter.format(
+                          (expense.amount_cents ?? 0) / 100,
+                        )}
                       </p>
                     </div>
                   </div>

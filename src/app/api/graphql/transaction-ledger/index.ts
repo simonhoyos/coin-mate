@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { compact } from 'lodash';
 import type { IContext } from '@/lib/types';
-import { TransactionLedger, TypeEnum } from '@/models/transaction-ledger';
+import { TransactionLedger } from '@/models/transaction-ledger';
 
 export const typeDefs = `#graphql
   type TransactionLedger {
@@ -12,6 +12,7 @@ export const typeDefs = `#graphql
     currency: String
     amount_cents: Int
     transacted_at: String
+    type: String
 
     category: Category
   }
@@ -69,6 +70,11 @@ export const resolvers = {
           : undefined,
       ),
 
+    type: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then(
+        (transaction) => transaction?.type,
+      ),
+
     category: (parent: { id: string }, _args: never, context: IContext) =>
       TransactionLedger.gen({ context, id: parent.id }).then((transaction) =>
         transaction?.category_id != null
@@ -85,7 +91,7 @@ export const resolvers = {
 
       const transactions = await context.services
         .knex<TransactionLedger>('transaction_ledger')
-        .where({ user_id: context.user.id, type: TypeEnum.enum.expense })
+        .where({ user_id: context.user.id })
         .orderBy('transacted_at', 'desc');
 
       return {
