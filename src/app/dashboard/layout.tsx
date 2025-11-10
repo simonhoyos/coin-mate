@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function DashboardLayout(
   props: Readonly<{
@@ -24,7 +25,18 @@ export default function DashboardLayout(
         }
       }
     `,
+    {
+      ssr: false,
+    },
   );
+
+  if (meQuery.loading === true) {
+    return (
+      <div className="flex flex-1 justify-center">
+        <Spinner className="size-12 text-primary mt-10" />
+      </div>
+    );
+  }
 
   const meError = meQuery.error;
 

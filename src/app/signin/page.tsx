@@ -26,6 +26,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group';
 import { Logo } from '@/components/ui/logo';
+import { Spinner } from '@/components/ui/spinner';
 
 const SignInFormSchema = z.object({
   email: z.email('Invalid email address').nonempty('Email is required'),
@@ -47,6 +48,9 @@ export default function SignInPage() {
         }
       }
     `,
+    {
+      ssr: false,
+    },
   );
 
   const meData = meQuery.data;
@@ -108,6 +112,14 @@ export default function SignInPage() {
     if (userSignInData?.userSignIn.token != null) {
       redirect('/dashboard/expenses');
     }
+  }
+
+  if (meQuery.loading === true) {
+    return (
+      <div className="flex flex-1 justify-center">
+        <Spinner className="size-12 text-primary mt-10" />
+      </div>
+    );
   }
 
   if (meData?.me?.id != null) {

@@ -26,6 +26,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group';
 import { Logo } from '@/components/ui/logo';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 const SignUpFormSchema = z
@@ -62,6 +63,9 @@ export default function SignUpPage() {
         }
       }
     `,
+    {
+      ssr: false,
+    },
   );
 
   const meData = meQuery.data;
@@ -131,6 +135,14 @@ export default function SignUpPage() {
     control: form.control,
     name: 'password',
   });
+
+  if (meQuery.loading === true) {
+    return (
+      <div className="flex flex-1 justify-center">
+        <Spinner className="size-12 text-primary mt-10" />
+      </div>
+    );
+  }
 
   if (meData?.me?.id != null) {
     redirect('/dashboard/expenses');
