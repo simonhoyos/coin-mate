@@ -505,9 +505,11 @@ export default function ExpensesPage() {
                   key={expense.id}
                   className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
                 >
-                  {(
-                    <p className="text-xs text-gray-800">{expense.category?.name} ({expense.type})</p>
-                  )}
+                  {
+                    <p className="text-xs text-gray-800">
+                      {expense.category?.name} ({expense.type})
+                    </p>
+                  }
                   <div className="flex justify-between w-full">
                     <div className="flex flex-col gap-2">
                       <h2 className="font-bold">{expense.concept}</h2>
