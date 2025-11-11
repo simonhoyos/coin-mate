@@ -4,7 +4,12 @@ import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogDescription } from '@radix-ui/react-dialog';
-import { IconCirclePlus, IconPencil, IconTrash } from '@tabler/icons-react';
+import {
+  IconCirclePlus,
+  IconFolderCode,
+  IconPencil,
+  IconTrash,
+} from '@tabler/icons-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -17,12 +22,21 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
+import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 
 const CategoryCreateFormSchema = z.object({
   name: z.string().min(1).max(32),
@@ -204,34 +218,58 @@ export default function CategoriesPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <section className="flex flex-1 flex-col gap-4">
-        {categoryListData.map((category) => (
-          <div
-            key={category.id}
-            className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
-          >
-            <div className="flex flex-col gap-2">
-              <h2 className="font-bold">{category.name}</h2>
-              {(category.description ?? '') !== '' && (
-                <p>{category.description}</p>
-              )}
-            </div>
-
+      {categoryListQuery.loading === true ? (
+        <div className="flex flex-1 justify-center">
+          <Spinner className="size-12 text-primary mt-10" />
+        </div>
+      ) : categoryListData.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <IconFolderCode />
+            </EmptyMedia>
+            <EmptyTitle>No categories yet</EmptyTitle>
+            <EmptyDescription>
+              You haven&apos;t created any categories yet. Get started by
+              creating your first category.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
             <div className="flex gap-2">
-              <CategoryUpdateAction
-                id={category.id}
-                name={category.name}
-                description={category.description}
-                refetch={categoryListQuery.refetch}
-              />
-              <CategoryDeleteAction
-                id={category.id}
-                refetch={categoryListQuery.refetch}
-              />
+              <Button>Create category</Button>
             </div>
-          </div>
-        ))}
-      </section>
+          </EmptyContent>
+        </Empty>
+      ) : (
+        <section className="flex flex-1 flex-col gap-4">
+          {categoryListData.map((category) => (
+            <div
+              key={category.id}
+              className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
+            >
+              <div className="flex flex-col gap-2">
+                <h2 className="font-bold">{category.name}</h2>
+                {(category.description ?? '') !== '' && (
+                  <p>{category.description}</p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <CategoryUpdateAction
+                  id={category.id}
+                  name={category.name}
+                  description={category.description}
+                  refetch={categoryListQuery.refetch}
+                />
+                <CategoryDeleteAction
+                  id={category.id}
+                  refetch={categoryListQuery.refetch}
+                />
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   );
 }
