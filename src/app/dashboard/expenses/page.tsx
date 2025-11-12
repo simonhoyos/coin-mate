@@ -3,7 +3,7 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IconCirclePlus } from '@tabler/icons-react';
+import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
 import { groupBy } from 'lodash';
 import { ChevronDownIcon } from 'lucide-react';
 import React from 'react';
@@ -18,6 +18,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import {
   Field,
   FieldError,
@@ -37,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 
 const CurrencyEnum = z.enum(['COP', 'USD'], 'Currency must be COP or USD');
 const TypeEnum = z.enum(['expense', 'income'], 'Select a valid type');
@@ -494,43 +503,67 @@ export default function ExpensesPage() {
         </Dialog>
       </div>
 
-      <section className="flex flex-1 flex-col gap-4">
-        {Object.entries(expenseListGroupedByDate).map(
-          ([groupDate, expenseList]) => (
-            <section key={groupDate} className="flex flex-col gap-4">
-              <h2 className="font-semibold text-lg">{groupDate}</h2>
+      {expenseListQuery.loading === true ? (
+        <div className="flex flex-1 justify-center">
+          <Spinner className="size-12 text-primary mt-10" />
+        </div>
+      ) : expenseListData.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <IconFolderCode />
+            </EmptyMedia>
+            <EmptyTitle>No transactions yet</EmptyTitle>
+            <EmptyDescription>
+              You haven&apos;t created any transactions yet. Get started by
+              creating your first transaction.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <div className="flex gap-2">
+              <Button>Create transaction</Button>
+            </div>
+          </EmptyContent>
+        </Empty>
+      ) : (
+        <section className="flex flex-1 flex-col gap-4">
+          {Object.entries(expenseListGroupedByDate).map(
+            ([groupDate, expenseList]) => (
+              <section key={groupDate} className="flex flex-col gap-4">
+                <h2 className="font-semibold text-lg">{groupDate}</h2>
 
-              {expenseList.map((expense) => (
-                <div
-                  key={expense.id}
-                  className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
-                >
-                  {
-                    <p className="text-xs text-gray-800">
-                      {expense.category?.name} ({expense.type})
-                    </p>
-                  }
-                  <div className="flex justify-between w-full">
-                    <div className="flex flex-col gap-2">
-                      <h2 className="font-bold">{expense.concept}</h2>
-                      {(expense.description ?? '') !== '' && (
-                        <p>{expense.description}</p>
-                      )}
-                    </div>
-                    <div>
-                      <p>
-                        {moneyFormatter.format(
-                          (expense.amount_cents ?? 0) / 100,
-                        )}
+                {expenseList.map((expense) => (
+                  <div
+                    key={expense.id}
+                    className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
+                  >
+                    {
+                      <p className="text-xs text-gray-800">
+                        {expense.category?.name} ({expense.type})
                       </p>
+                    }
+                    <div className="flex justify-between w-full">
+                      <div className="flex flex-col gap-2">
+                        <h2 className="font-bold">{expense.concept}</h2>
+                        {(expense.description ?? '') !== '' && (
+                          <p>{expense.description}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p>
+                          {moneyFormatter.format(
+                            (expense.amount_cents ?? 0) / 100,
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </section>
-          ),
-        )}
-      </section>
+                ))}
+              </section>
+            ),
+          )}
+        </section>
+      )}
     </div>
   );
 }
