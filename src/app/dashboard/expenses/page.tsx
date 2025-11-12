@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
 import { groupBy } from 'lodash';
 import { ChevronDownIcon } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -46,6 +48,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 
 const CurrencyEnum = z.enum(['COP', 'USD'], 'Currency must be COP or USD');
 const TypeEnum = z.enum(['expense', 'income'], 'Select a valid type');
@@ -76,9 +79,38 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
   currency: 'COP',
 });
 
+const CREATE_EXPENSE_QUERY_PARAM = 'create_expense';
+
 export default function ExpensesPage() {
-  const [open, setOpen] = React.useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const createExpenseModalOpen =
+    searchParams.get(CREATE_EXPENSE_QUERY_PARAM) === 'true';
+
   const [dateOpen, setDateOpen] = React.useState(false);
+
+  const createQueryString = React.useCallback(
+    (args: { appendKeys?: { [key: string]: string }; omitKeys?: string[] }) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (args.appendKeys != null) {
+        for (const [name, value] of Object.entries(args.appendKeys)) {
+          params.set(name, value);
+        }
+      }
+
+      if (args.omitKeys != null) {
+        for (const name of args.omitKeys) {
+          params.delete(name);
+        }
+      }
+
+      return `${pathname}?${params.toString()}`;
+    },
+    [pathname, searchParams],
+  );
 
   const expenseListQuery = useQuery<{
     expenseList?: {
@@ -221,349 +253,393 @@ export default function ExpensesPage() {
 
     await expenseListQuery.refetch();
 
-    setOpen(false);
     transactionLedgerCreateForm.reset();
+    router.push(
+      createQueryString({
+        omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+      }),
+    );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center">
-        <h1>Expenses</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button type="button" variant="outline">
+    <>
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <h1>Expenses</h1>
+          <Button type="button" variant="outline" asChild>
+            <Link
+              href={createQueryString({
+                appendKeys: {
+                  [CREATE_EXPENSE_QUERY_PARAM]: 'true',
+                },
+              })}
+            >
               <IconCirclePlus />
               <span>Create transactions</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create a new transaction</DialogTitle>
-            </DialogHeader>
-            <form
-              onSubmit={transactionLedgerCreateForm.handleSubmit(
-                transactionLedgerCreateSubmit,
-              )}
-              className="flex flex-col gap-2"
-            >
-              <FieldGroup>
-                <Controller
-                  name="concept"
-                  control={transactionLedgerCreateForm.control}
-                  render={({ field, fieldState }) => (
-                    <Field>
-                      <FieldLabel htmlFor="concept">Concept</FieldLabel>
-                      <Input
-                        {...field}
-                        id="concept"
-                        aria-invalid={fieldState.invalid}
-                        type="text"
-                      />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-                <Controller
-                  name="description"
-                  control={transactionLedgerCreateForm.control}
-                  render={({ field, fieldState }) => (
-                    <Field>
-                      <FieldLabel htmlFor="description">Description</FieldLabel>
-                      <Input
-                        {...field}
-                        id="description"
-                        aria-invalid={fieldState.invalid}
-                        type="text"
-                      />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-                <div className="flex gap-2">
-                  <Controller
-                    name="currency"
-                    control={transactionLedgerCreateForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field className="shrink">
-                        <FieldLabel htmlFor="currency">Currency</FieldLabel>
-                        <Select
-                          {...field}
-                          aria-invalid={fieldState.invalid}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger id="currency">
-                            <SelectValue placeholder="Select currency" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {CurrencyEnum.options.map((currency) => (
-                              <SelectItem key={currency} value={currency}>
-                                {currency}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </Field>
-                    )}
-                  />
-                  <Controller
-                    name="amount"
-                    control={transactionLedgerCreateForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field>
-                        <FieldLabel htmlFor="currency">Amount</FieldLabel>
-                        <Input
-                          {...field}
-                          id="amount"
-                          aria-invalid={fieldState.invalid}
-                          type="text"
-                          onChange={(e) => {
-                            const value = e.target.value ?? '';
-
-                            if (/^\d*\.?(\d{0,2})?$/.test(value)) {
-                              field.onChange(value);
-                            }
-                          }}
-                          onBlur={(e) => {
-                            let result = e.target.value ?? '0';
-
-                            if (
-                              result === '' ||
-                              /^\d+\.?(\d{0,2})?$/.test(result) !== true
-                            ) {
-                              field.onChange(result);
-                              transactionLedgerCreateForm.trigger('amount');
-                              return;
-                            }
-
-                            result = result.replace(/^0+/, '');
-
-                            if (result.startsWith('.')) {
-                              result = `0${result}`;
-                            }
-
-                            const dotCount = (result.match(/\./g) || []).length;
-
-                            if (dotCount <= 0) {
-                              result += '.';
-                            }
-
-                            const decimalPlaces =
-                              result.split('.').at(1)?.length ?? 0;
-                            const missingDecimalPlaces = 2 - decimalPlaces;
-
-                            if (
-                              missingDecimalPlaces > 0 &&
-                              missingDecimalPlaces <= 2
-                            ) {
-                              result =
-                                result + '0'.repeat(missingDecimalPlaces);
-                            }
-
-                            result = result.slice(0, result.indexOf('.') + 3);
-
-                            field.onChange(result);
-                            transactionLedgerCreateForm.trigger('amount');
-                          }}
-                        />
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </Field>
-                    )}
-                  />
-                </div>
-                <Controller
-                  name="transacted_at"
-                  control={transactionLedgerCreateForm.control}
-                  render={({ field, fieldState }) => (
-                    <Field>
-                      <FieldLabel htmlFor="transacted_at">Date</FieldLabel>
-                      <Popover open={dateOpen} onOpenChange={setDateOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            id="date"
-                            className="w-48 justify-between font-normal"
-                          >
-                            {field.value
-                              ? new Date(field.value).toLocaleDateString()
-                              : 'Select date'}
-                            <ChevronDownIcon />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-auto overflow-hidden p-0"
-                          align="start"
-                        >
-                          <Calendar
-                            mode="single"
-                            selected={new Date(field.value)}
-                            captionLayout="dropdown"
-                            onSelect={(date) => {
-                              field.onChange(date?.toLocaleString());
-                              setDateOpen(false);
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-                <div className="flex gap-2">
-                  <Controller
-                    name="type"
-                    control={transactionLedgerCreateForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field>
-                        <FieldLabel htmlFor="type">Type</FieldLabel>
-                        <Select
-                          {...field}
-                          aria-invalid={fieldState.invalid}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger id="type">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TypeEnum.options.map((type) => (
-                              <SelectItem key={type} value={type}>
-                                {type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </Field>
-                    )}
-                  />
-                  <Controller
-                    name="category_id"
-                    control={transactionLedgerCreateForm.control}
-                    render={({ field, fieldState }) => (
-                      <Field>
-                        <FieldLabel htmlFor="category_id">Category</FieldLabel>
-                        <Select
-                          {...field}
-                          aria-invalid={fieldState.invalid}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger id="category_id">
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categoryListData.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {fieldState.invalid && (
-                          <FieldError errors={[fieldState.error]} />
-                        )}
-                      </Field>
-                    )}
-                  />
-                </div>
-                <Field>
-                  <div className="flex flex-1 gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1"
-                      disabled={transactionLedgerCreateState.loading === true}
-                      onClick={() => setOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1"
-                      disabled={transactionLedgerCreateState.loading === true}
-                    >
-                      Create transaction
-                    </Button>
-                  </div>
-                </Field>
-              </FieldGroup>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {expenseListQuery.loading === true ? (
-        <div className="flex flex-1 justify-center">
-          <Spinner className="size-12 text-primary mt-10" />
+            </Link>
+          </Button>
         </div>
-      ) : expenseListData.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <IconFolderCode />
-            </EmptyMedia>
-            <EmptyTitle>No transactions yet</EmptyTitle>
-            <EmptyDescription>
-              You haven&apos;t created any transactions yet. Get started by
-              creating your first transaction.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <div className="flex gap-2">
-              <Button>Create transaction</Button>
-            </div>
-          </EmptyContent>
-        </Empty>
-      ) : (
-        <section className="flex flex-1 flex-col gap-4">
-          {Object.entries(expenseListGroupedByDate).map(
-            ([groupDate, expenseList]) => (
-              <section key={groupDate} className="flex flex-col gap-4">
-                <h2 className="font-semibold text-lg">{groupDate}</h2>
 
-                {expenseList.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
+        {expenseListQuery.loading === true ? (
+          <div className="flex flex-1 justify-center">
+            <Spinner className="size-12 text-primary mt-10" />
+          </div>
+        ) : expenseListData.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <IconFolderCode />
+              </EmptyMedia>
+              <EmptyTitle>No transactions yet</EmptyTitle>
+              <EmptyDescription>
+                You haven&apos;t created any transactions yet. Get started by
+                creating your first transaction.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <div className="flex gap-2">
+                <Button type="button" asChild>
+                  <Link
+                    href={createQueryString({
+                      appendKeys: {
+                        [CREATE_EXPENSE_QUERY_PARAM]: 'true',
+                      },
+                    })}
                   >
-                    {
-                      <p className="text-xs text-gray-800">
-                        {expense.category?.name} ({expense.type})
-                      </p>
-                    }
-                    <div className="flex justify-between w-full">
-                      <div className="flex flex-col gap-2">
-                        <h2 className="font-bold">{expense.concept}</h2>
-                        {(expense.description ?? '') !== '' && (
-                          <p>{expense.description}</p>
-                        )}
-                      </div>
-                      <div>
-                        <p>
-                          {moneyFormatter.format(
-                            (expense.amount_cents ?? 0) / 100,
-                          )}
+                    <IconCirclePlus />
+                    <span>Create transactions</span>
+                  </Link>
+                </Button>
+              </div>
+            </EmptyContent>
+          </Empty>
+        ) : (
+          <section className="flex flex-1 flex-col gap-4">
+            {Object.entries(expenseListGroupedByDate).map(
+              ([groupDate, expenseList]) => (
+                <section key={groupDate} className="flex flex-col gap-4">
+                  <h2 className="font-semibold text-lg">{groupDate}</h2>
+
+                  {expenseList.map((expense) => (
+                    <div
+                      key={expense.id}
+                      className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
+                    >
+                      {
+                        <p className="text-xs text-gray-800">
+                          {expense.category?.name} ({expense.type})
                         </p>
+                      }
+                      <div className="flex justify-between w-full">
+                        <div className="flex flex-col gap-2">
+                          <h2 className="font-bold">{expense.concept}</h2>
+                          {(expense.description ?? '') !== '' && (
+                            <p>{expense.description}</p>
+                          )}
+                        </div>
+                        <div>
+                          <p>
+                            {moneyFormatter.format(
+                              (expense.amount_cents ?? 0) / 100,
+                            )}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </section>
-            ),
-          )}
-        </section>
-      )}
-    </div>
+                  ))}
+                </section>
+              ),
+            )}
+          </section>
+        )}
+      </div>
+
+      <Dialog
+        open={createExpenseModalOpen}
+        onOpenChange={(open) => {
+          if (open === false) {
+            router.push(
+              createQueryString({
+                omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+              }),
+            );
+          }
+        }}
+      >
+        <DialogTrigger asChild></DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create a new transaction</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={transactionLedgerCreateForm.handleSubmit(
+              transactionLedgerCreateSubmit,
+            )}
+            className="flex flex-col gap-2"
+          >
+            <FieldGroup>
+              <Controller
+                name="concept"
+                control={transactionLedgerCreateForm.control}
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor="concept">Concept</FieldLabel>
+                    <Input
+                      {...field}
+                      id="concept"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+              <Controller
+                name="description"
+                control={transactionLedgerCreateForm.control}
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor="description">Description</FieldLabel>
+                    <Input
+                      {...field}
+                      id="description"
+                      aria-invalid={fieldState.invalid}
+                      type="text"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+              <div className="flex gap-2">
+                <Controller
+                  name="currency"
+                  control={transactionLedgerCreateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field className="shrink">
+                      <FieldLabel htmlFor="currency">Currency</FieldLabel>
+                      <Select
+                        {...field}
+                        aria-invalid={fieldState.invalid}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger id="currency">
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CurrencyEnum.options.map((currency) => (
+                            <SelectItem key={currency} value={currency}>
+                              {currency}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="amount"
+                  control={transactionLedgerCreateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field>
+                      <FieldLabel htmlFor="currency">Amount</FieldLabel>
+                      <Input
+                        {...field}
+                        id="amount"
+                        aria-invalid={fieldState.invalid}
+                        type="text"
+                        onChange={(e) => {
+                          const value = e.target.value ?? '';
+
+                          if (/^\d*\.?(\d{0,2})?$/.test(value)) {
+                            field.onChange(value);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          let result = e.target.value ?? '0';
+
+                          if (
+                            result === '' ||
+                            /^\d+\.?(\d{0,2})?$/.test(result) !== true
+                          ) {
+                            field.onChange(result);
+                            transactionLedgerCreateForm.trigger('amount');
+                            return;
+                          }
+
+                          result = result.replace(/^0+/, '');
+
+                          if (result.startsWith('.')) {
+                            result = `0${result}`;
+                          }
+
+                          const dotCount = (result.match(/\./g) || []).length;
+
+                          if (dotCount <= 0) {
+                            result += '.';
+                          }
+
+                          const decimalPlaces =
+                            result.split('.').at(1)?.length ?? 0;
+                          const missingDecimalPlaces = 2 - decimalPlaces;
+
+                          if (
+                            missingDecimalPlaces > 0 &&
+                            missingDecimalPlaces <= 2
+                          ) {
+                            result = result + '0'.repeat(missingDecimalPlaces);
+                          }
+
+                          result = result.slice(0, result.indexOf('.') + 3);
+
+                          field.onChange(result);
+                          transactionLedgerCreateForm.trigger('amount');
+                        }}
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+              </div>
+              <Controller
+                name="transacted_at"
+                control={transactionLedgerCreateForm.control}
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor="transacted_at">Date</FieldLabel>
+                    <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          id="date"
+                          className="w-48 justify-between font-normal"
+                        >
+                          {field.value
+                            ? new Date(field.value).toLocaleDateString()
+                            : 'Select date'}
+                          <ChevronDownIcon />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto overflow-hidden p-0"
+                        align="start"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={new Date(field.value)}
+                          captionLayout="dropdown"
+                          onSelect={(date) => {
+                            field.onChange(date?.toLocaleString());
+                            setDateOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+              <div className="flex gap-2">
+                <Controller
+                  name="type"
+                  control={transactionLedgerCreateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field>
+                      <FieldLabel htmlFor="type">Type</FieldLabel>
+                      <Select
+                        {...field}
+                        aria-invalid={fieldState.invalid}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger id="type">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TypeEnum.options.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="category_id"
+                  control={transactionLedgerCreateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field>
+                      <FieldLabel htmlFor="category_id">Category</FieldLabel>
+                      <Select
+                        {...field}
+                        aria-invalid={fieldState.invalid}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger id="category_id">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryListData.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+              </div>
+              <Field>
+                <div className="flex flex-1 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      'flex-1',
+                      transactionLedgerCreateState.loading === true &&
+                        'opacity-50 pointer-events-none',
+                    )}
+                    asChild
+                  >
+                    <Link
+                      href={createQueryString({
+                        omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+                      })}
+                    >
+                      Cancel
+                    </Link>
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    disabled={transactionLedgerCreateState.loading === true}
+                  >
+                    Create transaction
+                  </Button>
+                </div>
+              </Field>
+            </FieldGroup>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
