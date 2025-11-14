@@ -65,6 +65,7 @@ export default function SignUpPage() {
     `,
     {
       ssr: false,
+      fetchPolicy: 'no-cache',
     },
   );
 

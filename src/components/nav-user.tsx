@@ -1,7 +1,9 @@
 'use client';
 
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 import { IconDotsVertical, IconLogout } from '@tabler/icons-react';
-
+import { redirect, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -27,7 +29,23 @@ export function NavUser({
     avatar: string;
   };
 }) {
+  const router = useRouter();
+
   const { isMobile } = useSidebar();
+
+  const [logoutMutation, logoutState] = useMutation<{
+    userLogout: {
+      success?: boolean;
+    };
+  }>(
+    gql`
+      mutation UserLogout {
+        userLogout {
+          success
+        }
+      }
+    `,
+  );
 
   return (
     <SidebarMenu>
@@ -72,7 +90,16 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                const logoutData = await logoutMutation();
+
+                if (logoutData.data?.userLogout.success === true) {
+                  router.replace('/signin');
+                }
+              }}
+              disabled={logoutState.loading}
+            >
               <IconLogout />
               Log out
             </DropdownMenuItem>

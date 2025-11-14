@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { assertNotNull } from '@/lib/assert';
-import { createSession } from '@/lib/session';
+import { clearSession, createSession } from '@/lib/session';
 import type { IContext } from '@/lib/types';
 import { User } from '@/models/user';
 
@@ -27,6 +27,10 @@ export const typeDefs = `#graphql
     token: String
   }
 
+  type UserLogoutPayload {
+    success: Boolean!
+  }
+
   extend type Query {
     me: User
   }
@@ -34,6 +38,7 @@ export const typeDefs = `#graphql
   extend type Mutation {
     userSignUp(input: UserSignUpInput!): UserPayload
     userSignIn(input: UserSignInInput!): UserPayload
+    userLogout: UserLogoutPayload
   }
 `;
 
@@ -112,6 +117,14 @@ export const resolvers = {
       return {
         user: { id: signInResult.user?.id },
         token: signInResult.token,
+      };
+    },
+
+    async userLogout() {
+      await clearSession();
+
+      return {
+        success: true,
       };
     },
   },
