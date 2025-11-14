@@ -1,4 +1,5 @@
 import { addHours, format } from 'date-fns';
+import { omitBy } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import { createLoader } from '@/lib/dataloader';
@@ -13,7 +14,7 @@ export class TransactionLedger {
   updated_at!: Date | string;
 
   concept!: string;
-  description?: string | undefined;
+  description?: string | undefined | null;
   currency!: string;
   amount_cents!: number;
   transacted_at!: string;
@@ -52,7 +53,7 @@ export class TransactionLedger {
 
     const userId = assertNotNull(
       args.context.user?.id,
-      'User must be authenticated to update a category',
+      'User must be authenticated to create a transaction',
     );
 
     await User.gen({
@@ -66,17 +67,20 @@ export class TransactionLedger {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
-        const payload = {
-          concept: parsedData.concept,
-          description: parsedData.description,
-          currency: parsedData.currency,
-          amount_cents: parsedData.amount_cents,
-          transacted_at: parsedData.transacted_at,
-          type: parsedData.type,
+        const payload = omitBy(
+          {
+            concept: parsedData.concept,
+            description: parsedData.description,
+            currency: parsedData.currency,
+            amount_cents: parsedData.amount_cents,
+            transacted_at: parsedData.transacted_at,
+            type: parsedData.type,
 
-          user_id: userId,
-          category_id: parsedData.category_id,
-        };
+            user_id: userId,
+            category_id: parsedData.category_id,
+          },
+          (value) => (value ?? '') == null,
+        );
 
         const [transactionLedger] = await trx<TransactionLedger>(
           'transaction_ledger',
@@ -89,7 +93,7 @@ export class TransactionLedger {
             object: 'transaction_ledger',
             object_id: assertNotNull(
               transactionLedger?.id,
-              'Transaction ledger could not be created',
+              'Transaction could not be created',
             ),
             operation: 'create',
             payload,
@@ -104,6 +108,93 @@ export class TransactionLedger {
 
     return {
       transactionLedger: trxResult.transactionLedger,
+    };
+  }
+
+  static async update(args: {
+    context: IContext;
+    data: {
+      id: string;
+
+      concept: string;
+      description: string | undefined;
+      currency: string;
+      amount_cents: string;
+      transacted_at: string;
+      type: string;
+
+      category_id: string;
+    };
+  }) {
+    const parsedData = TransactionLedgerUpdateSchema.parse(args.data);
+
+    const userId = assertNotNull(
+      args.context.user?.id,
+      'User must be authenticated to update a transaction',
+    );
+
+    await User.gen({
+      context: args.context,
+      id: userId,
+    }).then((user) => {
+      if (user == null) {
+        throw new Error('User not found');
+      }
+    });
+
+    await TransactionLedger.gen({
+      context: args.context,
+      id: args.data.id,
+    }).then((category) => {
+      if (category == null) {
+        throw new Error('Category not found');
+      }
+    });
+
+    const trxResult = await args.context.services.knex.transaction(
+      async (trx) => {
+        const payload = omitBy(
+          {
+            concept: parsedData.concept,
+            description: parsedData.description,
+            currency: parsedData.currency,
+            amount_cents: parsedData.amount_cents,
+            transacted_at: parsedData.transacted_at,
+            type: parsedData.type,
+
+            category_id: parsedData.category_id,
+          },
+          (value) => (value ?? '') == null,
+        );
+
+        const [transaction] = await trx<TransactionLedger>('transaction_ledger')
+          .update(payload, '*')
+          .where({
+            id: args.data.id,
+          });
+
+        await Audit.log({
+          trx,
+          context: args.context,
+          data: {
+            object: 'transaction_ledger',
+            object_id: assertNotNull(
+              transaction?.id,
+              'Transaction could not be updated',
+            ),
+            operation: 'update',
+            payload,
+          },
+        });
+
+        return {
+          transaction,
+        };
+      },
+    );
+
+    return {
+      transaction: trxResult.transaction,
     };
   }
 }
@@ -128,6 +219,10 @@ const TransactionLedgerCreateSchema = z.object({
     .pipe(z.iso.datetime()),
   type: TypeEnum,
   category_id: z.uuid(),
+});
+
+const TransactionLedgerUpdateSchema = TransactionLedgerCreateSchema.extend({
+  id: z.uuid(),
 });
 
 const getTransactionLedgerById = createLoader(

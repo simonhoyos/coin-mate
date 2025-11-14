@@ -3,7 +3,11 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
+import {
+  IconCirclePlus,
+  IconFolderCode,
+  IconPencil,
+} from '@tabler/icons-react';
 import { groupBy } from 'lodash';
 import { ChevronDownIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -18,7 +22,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Empty,
@@ -53,7 +56,7 @@ import { cn } from '@/lib/utils';
 const CurrencyEnum = z.enum(['COP', 'USD'], 'Currency must be COP or USD');
 const TypeEnum = z.enum(['expense', 'income'], 'Select a valid type');
 
-const TransactionLedgerCreateFormSchema = z.object({
+const TransactionLedgerFormSchema = z.object({
   concept: z
     .string()
     .min(1, 'Concept is required')
@@ -80,6 +83,7 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 const CREATE_EXPENSE_QUERY_PARAM = 'create_expense';
+const EDIT_EXPENSE_QUERY_PARAM = 'edit_expense';
 
 export default function ExpensesPage() {
   const router = useRouter();
@@ -88,6 +92,8 @@ export default function ExpensesPage() {
 
   const createExpenseModalOpen =
     searchParams.get(CREATE_EXPENSE_QUERY_PARAM) === 'true';
+
+  const editingExpenseId = searchParams.get(EDIT_EXPENSE_QUERY_PARAM);
 
   const [dateOpen, setDateOpen] = React.useState(false);
 
@@ -119,10 +125,10 @@ export default function ExpensesPage() {
 
         concept?: string;
         description?: string;
-        currency?: string;
+        currency?: z.infer<typeof CurrencyEnum>;
         amount_cents?: number;
         transacted_at?: string;
-        type?: string;
+        type?: z.infer<typeof TypeEnum>;
 
         category?: {
           id: string;
@@ -161,6 +167,10 @@ export default function ExpensesPage() {
   const expenseListGroupedByDate = React.useMemo(() => {
     return groupBy(expenseListData, 'transacted_at');
   }, [expenseListData]);
+
+  const expenseEditing = React.useMemo(() => {
+    return expenseListData.find((expense) => expense.id === editingExpenseId);
+  }, [editingExpenseId, expenseListData]);
 
   const categoryListQuery = useQuery<{
     categoryList?: {
@@ -206,36 +216,82 @@ export default function ExpensesPage() {
       }
     >(
       gql`
-      mutation ExpenseCreateMutation($input: TransactionLedgerCreateInput!) {
-        transactionLedgerCreate(input: $input) {
-          id
+        mutation ExpenseCreateMutation($input: TransactionLedgerCreateInput!) {
+          transactionLedgerCreate(input: $input) {
+            id
+          }
         }
-      }
-    `,
+      `,
     );
 
-  const transactionLedgerCreateDefaultValues = React.useMemo(
+  const [transactionLedgerUpdateMutation, transactionLedgerUpdateState] =
+    useMutation<
+      {
+        transactionLedgerUpdate?: {
+          id: string;
+        };
+      },
+      {
+        input: {
+          id: string;
+          concept: string;
+          description: string | undefined;
+          currency: string;
+          amount: string;
+          transacted_at: string;
+          type: string;
+          category_id: string;
+        };
+      }
+    >(
+      gql`
+        mutation ExpenseUpdateMutation($input: TransactionLedgerUpdateInput!) {
+          transactionLedgerUpdate(input: $input) {
+            id
+          }
+        }
+      `,
+    );
+
+  const transactionLedgerDefaultValues = React.useMemo(
     () => ({
       concept: '',
       description: '',
-      currency: 'COP' as const,
+      currency: CurrencyEnum.enum.COP,
       amount: '',
       transacted_at: new Date().toISOString(),
-      type: 'expense' as const,
+      type: TypeEnum.enum.expense,
       category_id: '',
     }),
     [],
   );
 
-  const transactionLedgerCreateForm = useForm({
-    resolver: zodResolver(TransactionLedgerCreateFormSchema),
-    defaultValues: transactionLedgerCreateDefaultValues,
+  const transactionLedgerValues = React.useMemo(
+    () => ({
+      concept: expenseEditing?.concept ?? '',
+      description: expenseEditing?.description ?? '',
+      currency: expenseEditing?.currency ?? CurrencyEnum.enum.COP,
+      amount: ((expenseEditing?.amount_cents ?? 0) / 100).toString(),
+      transacted_at: (expenseEditing?.transacted_at != null
+        ? new Date(expenseEditing.transacted_at)
+        : new Date()
+      ).toISOString(),
+      type: expenseEditing?.type ?? TypeEnum.enum.expense,
+      category_id: expenseEditing?.category?.id ?? '',
+    }),
+    [expenseEditing],
+  );
+
+  const transactionLedgerForm = useForm({
+    resolver: zodResolver(TransactionLedgerFormSchema),
+    defaultValues: transactionLedgerDefaultValues,
+    values: transactionLedgerValues,
     mode: 'onBlur',
     reValidateMode: 'onBlur',
   });
 
   async function transactionLedgerCreateSubmit(
-    data: z.infer<typeof TransactionLedgerCreateFormSchema>,
+    data: z.infer<typeof TransactionLedgerFormSchema>,
   ) {
     await transactionLedgerCreateMutation({
       variables: {
@@ -253,13 +309,51 @@ export default function ExpensesPage() {
 
     await expenseListQuery.refetch();
 
-    transactionLedgerCreateForm.reset();
+    transactionLedgerForm.reset();
     router.push(
       createQueryString({
-        omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+        omitKeys: [CREATE_EXPENSE_QUERY_PARAM, EDIT_EXPENSE_QUERY_PARAM],
       }),
     );
   }
+
+  const transactionLedgerUpdateSubmit = React.useCallback(
+    async (data: z.infer<typeof TransactionLedgerFormSchema>) => {
+      if (editingExpenseId == null) return;
+
+      await transactionLedgerUpdateMutation({
+        variables: {
+          input: {
+            id: editingExpenseId,
+            concept: data.concept,
+            description: data.description,
+            currency: data.currency,
+            amount: data.amount,
+            transacted_at: data.transacted_at,
+            type: data.type,
+            category_id: data.category_id,
+          },
+        },
+      });
+
+      await expenseListQuery.refetch();
+
+      transactionLedgerForm.reset();
+      router.push(
+        createQueryString({
+          omitKeys: [CREATE_EXPENSE_QUERY_PARAM, EDIT_EXPENSE_QUERY_PARAM],
+        }),
+      );
+    },
+    [
+      editingExpenseId,
+      transactionLedgerForm.reset,
+      transactionLedgerUpdateMutation,
+      expenseListQuery,
+      router,
+      createQueryString,
+    ],
+  );
 
   return (
     <>
@@ -272,6 +366,7 @@ export default function ExpensesPage() {
                 appendKeys: {
                   [CREATE_EXPENSE_QUERY_PARAM]: 'true',
                 },
+                omitKeys: [EDIT_EXPENSE_QUERY_PARAM],
               })}
             >
               <IconCirclePlus />
@@ -304,6 +399,7 @@ export default function ExpensesPage() {
                       appendKeys: {
                         [CREATE_EXPENSE_QUERY_PARAM]: 'true',
                       },
+                      omitKeys: [EDIT_EXPENSE_QUERY_PARAM],
                     })}
                   >
                     <IconCirclePlus />
@@ -344,6 +440,19 @@ export default function ExpensesPage() {
                             )}
                           </p>
                         </div>
+                        <Button type="button" variant="ghost" asChild>
+                          <Link
+                            href={createQueryString({
+                              appendKeys: {
+                                [EDIT_EXPENSE_QUERY_PARAM]: expense.id,
+                              },
+                              omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+                            })}
+                          >
+                            <IconPencil />
+                            <span className="sr-only">Edit transaction</span>
+                          </Link>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -355,32 +464,40 @@ export default function ExpensesPage() {
       </div>
 
       <Dialog
-        open={createExpenseModalOpen}
+        open={createExpenseModalOpen || expenseEditing != null}
         onOpenChange={(open) => {
           if (open === false) {
             router.push(
               createQueryString({
-                omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+                omitKeys: [
+                  CREATE_EXPENSE_QUERY_PARAM,
+                  EDIT_EXPENSE_QUERY_PARAM,
+                ],
               }),
             );
           }
         }}
       >
-        <DialogTrigger asChild></DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create a new transaction</DialogTitle>
+            <DialogTitle>
+              {expenseEditing != null
+                ? 'Edit transaction'
+                : 'Create a new transaction'}
+            </DialogTitle>
           </DialogHeader>
           <form
-            onSubmit={transactionLedgerCreateForm.handleSubmit(
-              transactionLedgerCreateSubmit,
+            onSubmit={transactionLedgerForm.handleSubmit(
+              expenseEditing != null
+                ? transactionLedgerUpdateSubmit
+                : transactionLedgerCreateSubmit,
             )}
             className="flex flex-col gap-2"
           >
             <FieldGroup>
               <Controller
                 name="concept"
-                control={transactionLedgerCreateForm.control}
+                control={transactionLedgerForm.control}
                 render={({ field, fieldState }) => (
                   <Field>
                     <FieldLabel htmlFor="concept">Concept</FieldLabel>
@@ -398,7 +515,7 @@ export default function ExpensesPage() {
               />
               <Controller
                 name="description"
-                control={transactionLedgerCreateForm.control}
+                control={transactionLedgerForm.control}
                 render={({ field, fieldState }) => (
                   <Field>
                     <FieldLabel htmlFor="description">Description</FieldLabel>
@@ -417,7 +534,7 @@ export default function ExpensesPage() {
               <div className="flex gap-2">
                 <Controller
                   name="currency"
-                  control={transactionLedgerCreateForm.control}
+                  control={transactionLedgerForm.control}
                   render={({ field, fieldState }) => (
                     <Field className="shrink">
                       <FieldLabel htmlFor="currency">Currency</FieldLabel>
@@ -445,7 +562,7 @@ export default function ExpensesPage() {
                 />
                 <Controller
                   name="amount"
-                  control={transactionLedgerCreateForm.control}
+                  control={transactionLedgerForm.control}
                   render={({ field, fieldState }) => (
                     <Field>
                       <FieldLabel htmlFor="currency">Amount</FieldLabel>
@@ -469,7 +586,7 @@ export default function ExpensesPage() {
                             /^\d+\.?(\d{0,2})?$/.test(result) !== true
                           ) {
                             field.onChange(result);
-                            transactionLedgerCreateForm.trigger('amount');
+                            transactionLedgerForm.trigger('amount');
                             return;
                           }
 
@@ -499,7 +616,7 @@ export default function ExpensesPage() {
                           result = result.slice(0, result.indexOf('.') + 3);
 
                           field.onChange(result);
-                          transactionLedgerCreateForm.trigger('amount');
+                          transactionLedgerForm.trigger('amount');
                         }}
                       />
                       {fieldState.invalid && (
@@ -511,7 +628,7 @@ export default function ExpensesPage() {
               </div>
               <Controller
                 name="transacted_at"
-                control={transactionLedgerCreateForm.control}
+                control={transactionLedgerForm.control}
                 render={({ field, fieldState }) => (
                   <Field>
                     <FieldLabel htmlFor="transacted_at">Date</FieldLabel>
@@ -552,7 +669,7 @@ export default function ExpensesPage() {
               <div className="flex gap-2">
                 <Controller
                   name="type"
-                  control={transactionLedgerCreateForm.control}
+                  control={transactionLedgerForm.control}
                   render={({ field, fieldState }) => (
                     <Field>
                       <FieldLabel htmlFor="type">Type</FieldLabel>
@@ -580,7 +697,7 @@ export default function ExpensesPage() {
                 />
                 <Controller
                   name="category_id"
-                  control={transactionLedgerCreateForm.control}
+                  control={transactionLedgerForm.control}
                   render={({ field, fieldState }) => (
                     <Field>
                       <FieldLabel htmlFor="category_id">Category</FieldLabel>
@@ -614,8 +731,9 @@ export default function ExpensesPage() {
                     variant="outline"
                     className={cn(
                       'flex-1',
-                      transactionLedgerCreateState.loading === true &&
-                        'opacity-50 pointer-events-none',
+                      transactionLedgerCreateState.loading === true ||
+                        (transactionLedgerUpdateState.loading === true &&
+                          'opacity-50 pointer-events-none'),
                     )}
                     asChild
                   >
@@ -630,9 +748,14 @@ export default function ExpensesPage() {
                   <Button
                     type="submit"
                     className="flex-1"
-                    disabled={transactionLedgerCreateState.loading === true}
+                    disabled={
+                      transactionLedgerCreateState.loading === true ||
+                      transactionLedgerUpdateState.loading === true
+                    }
                   >
-                    Create transaction
+                    {expenseEditing != null
+                      ? 'Update transaction'
+                      : 'Create transaction'}
                   </Button>
                 </div>
               </Field>

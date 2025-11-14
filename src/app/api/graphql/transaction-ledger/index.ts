@@ -32,12 +32,26 @@ export const typeDefs = `#graphql
     category_id: UUID
   }
 
+  input TransactionLedgerUpdateInput {
+    id: UUID!
+
+    concept: String!
+    description: String
+    currency: String!
+    amount: String!
+    transacted_at: String!
+    type: String!
+
+    category_id: UUID
+  }
+
   extend type Query {
     expenseList: TransactionLedgerConnection
   }
 
   extend type Mutation {
     transactionLedgerCreate(input: TransactionLedgerCreateInput!): TransactionLedger
+    transactionLedgerUpdate(input: TransactionLedgerUpdateInput!): TransactionLedger
   }
 `;
 
@@ -125,31 +139,42 @@ export const resolvers = {
       },
       context: IContext,
     ) {
-      const {
-        concept,
-        description,
-        currency,
-        amount,
-        transacted_at,
-        type,
-        category_id,
-      } = args.input;
-
       const transactionLedgerResult = await TransactionLedger.create({
         context,
         data: {
-          concept,
-          description,
-          currency,
-          amount_cents: amount,
-          transacted_at,
-          type,
-
-          category_id,
+          ...args.input,
+          amount_cents: args.input.amount,
         },
       });
 
       return { id: transactionLedgerResult.transactionLedger?.id };
+    },
+
+    async transactionLedgerUpdate(
+      _parent: never,
+      args: {
+        input: {
+          id: string;
+          concept: string;
+          description: string | undefined;
+          currency: string;
+          amount: string;
+          transacted_at: string;
+          type: string;
+          category_id: string;
+        };
+      },
+      context: IContext,
+    ) {
+      const transactionLedgerResult = await TransactionLedger.update({
+        context,
+        data: {
+          ...args.input,
+          amount_cents: args.input.amount,
+        },
+      });
+
+      return { id: transactionLedgerResult.transaction?.id };
     },
   },
 };
