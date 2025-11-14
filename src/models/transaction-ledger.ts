@@ -70,16 +70,24 @@ export class TransactionLedger {
         const payload = omitBy(
           {
             concept: parsedData.concept,
-            description: parsedData.description,
+            description:
+              (parsedData.description ?? '') !== ''
+                ? parsedData.description
+                : null,
+
+            original_currency: parsedData.currency,
             currency: parsedData.currency,
+
+            original_amount_cents: parsedData.amount_cents,
             amount_cents: parsedData.amount_cents,
+
             transacted_at: parsedData.transacted_at,
             type: parsedData.type,
 
             user_id: userId,
             category_id: parsedData.category_id,
           },
-          (value) => (value ?? '') == null,
+          (value) => value == null,
         );
 
         const [transactionLedger] = await trx<TransactionLedger>(
@@ -153,19 +161,24 @@ export class TransactionLedger {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
-        const payload = omitBy(
-          {
-            concept: parsedData.concept,
-            description: parsedData.description,
-            currency: parsedData.currency,
-            amount_cents: parsedData.amount_cents,
-            transacted_at: parsedData.transacted_at,
-            type: parsedData.type,
+        const payload = {
+          concept: parsedData.concept,
+          description:
+            (parsedData.description ?? '') !== ''
+              ? parsedData.description
+              : null,
 
-            category_id: parsedData.category_id,
-          },
-          (value) => (value ?? '') == null,
-        );
+          original_currency: parsedData.currency,
+          currency: parsedData.currency,
+
+          original_amount_cents: parsedData.amount_cents,
+          amount_cents: parsedData.amount_cents,
+
+          transacted_at: parsedData.transacted_at,
+          type: parsedData.type,
+
+          category_id: parsedData.category_id,
+        };
 
         const [transaction] = await trx<TransactionLedger>('transaction_ledger')
           .update(payload, '*')
