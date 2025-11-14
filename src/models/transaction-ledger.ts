@@ -144,10 +144,10 @@ export class TransactionLedger {
 
     await TransactionLedger.gen({
       context: args.context,
-      id: args.data.id,
+      id: parsedData.id,
     }).then((category) => {
       if (category == null) {
-        throw new Error('Category not found');
+        throw new Error('Transaction not found');
       }
     });
 
@@ -197,6 +197,74 @@ export class TransactionLedger {
       transaction: trxResult.transaction,
     };
   }
+
+  static async delete(args: {
+    context: IContext;
+    data: {
+      id: string;
+    };
+  }) {
+    const parsedData = TransactionLedgerDeleteSchema.parse(args.data);
+
+    const userId = assertNotNull(
+      args.context.user?.id,
+      'User must be authenticated to update a transaction',
+    );
+
+    await User.gen({
+      context: args.context,
+      id: userId,
+    }).then((user) => {
+      if (user == null) {
+        throw new Error('User not found');
+      }
+    });
+
+    await TransactionLedger.gen({
+      context: args.context,
+      id: parsedData.id,
+    }).then((category) => {
+      if (category == null) {
+        throw new Error('Category not found');
+      }
+    });
+
+    const trxResult = await args.context.services.knex.transaction(
+      async (trx) => {
+        const payload = {
+          archived_at: new Date(),
+        };
+
+        const [transaction] = await trx<TransactionLedger>('transaction_ledger')
+          .update(payload, '*')
+          .where({
+            id: args.data.id,
+          });
+
+        await Audit.log({
+          trx,
+          context: args.context,
+          data: {
+            object: 'transaction_ledger',
+            object_id: assertNotNull(
+              transaction?.id,
+              'Transaction could not be updated',
+            ),
+            operation: 'delete',
+            payload,
+          },
+        });
+
+        return {
+          transaction,
+        };
+      },
+    );
+
+    return {
+      transaction: trxResult.transaction,
+    };
+  }
 }
 
 export const CurrencyEnum = z.enum(['COP', 'USD']);
@@ -222,6 +290,10 @@ const TransactionLedgerCreateSchema = z.object({
 });
 
 const TransactionLedgerUpdateSchema = TransactionLedgerCreateSchema.extend({
+  id: z.uuid(),
+});
+
+const TransactionLedgerDeleteSchema = z.object({
   id: z.uuid(),
 });
 

@@ -7,6 +7,7 @@ import {
   IconCirclePlus,
   IconFolderCode,
   IconPencil,
+  IconTrash,
 } from '@tabler/icons-react';
 import { groupBy } from 'lodash';
 import { ChevronDownIcon } from 'lucide-react';
@@ -20,6 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -96,6 +98,9 @@ export default function ExpensesPage() {
   const editingExpenseId = searchParams.get(EDIT_EXPENSE_QUERY_PARAM);
 
   const [dateOpen, setDateOpen] = React.useState(false);
+  const [deletingTransactionId, setDeletingTransactionId] = React.useState<
+    string | null
+  >(null);
 
   const createQueryString = React.useCallback(
     (args: { appendKeys?: { [key: string]: string }; omitKeys?: string[] }) => {
@@ -253,6 +258,28 @@ export default function ExpensesPage() {
       `,
     );
 
+  const [transactionLedgerDeleteMutation, transactionLedgerDeleteState] =
+    useMutation<
+      {
+        transactionLedgerUpdate?: {
+          id: string;
+        };
+      },
+      {
+        input: {
+          id: string;
+        };
+      }
+    >(
+      gql`
+        mutation ExpenseDeleteMutation($input: TransactionLedgerDeleteInput!) {
+          transactionLedgerDelete(input: $input) {
+            id
+          }
+        }
+      `,
+    );
+
   const transactionLedgerDefaultValues = React.useMemo(
     () => ({
       concept: '',
@@ -355,6 +382,22 @@ export default function ExpensesPage() {
     ],
   );
 
+  async function transactionLedgerDeleteConfirm() {
+    if (deletingTransactionId == null) return;
+
+    await transactionLedgerDeleteMutation({
+      variables: {
+        input: {
+          id: deletingTransactionId,
+        },
+      },
+    });
+
+    await expenseListQuery.refetch();
+
+    setDeletingTransactionId(null);
+  }
+
   return (
     <>
       <div className="flex flex-col gap-4">
@@ -440,19 +483,30 @@ export default function ExpensesPage() {
                             )}
                           </p>
                         </div>
-                        <Button type="button" variant="ghost" asChild>
-                          <Link
-                            href={createQueryString({
-                              appendKeys: {
-                                [EDIT_EXPENSE_QUERY_PARAM]: expense.id,
-                              },
-                              omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
-                            })}
+                        <div className="flex gap-2">
+                          <Button type="button" variant="ghost" asChild>
+                            <Link
+                              href={createQueryString({
+                                appendKeys: {
+                                  [EDIT_EXPENSE_QUERY_PARAM]: expense.id,
+                                },
+                                omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+                              })}
+                            >
+                              <IconPencil />
+                              <span className="sr-only">Edit transaction</span>
+                            </Link>
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setDeletingTransactionId(expense.id)}
                           >
-                            <IconPencil />
-                            <span className="sr-only">Edit transaction</span>
-                          </Link>
-                        </Button>
+                            <IconTrash className="text-destructive" />
+                            <span className="sr-only">Delete transaction</span>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -761,6 +815,46 @@ export default function ExpensesPage() {
               </Field>
             </FieldGroup>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletingTransactionId != null}
+        onOpenChange={(open) => {
+          if (open === false) {
+            setDeletingTransactionId(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete an existing transaction</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this transaction?
+              <br />
+              This action cannot be undone
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setDeletingTransactionId(null)}
+              disabled={transactionLedgerDeleteState.loading === true}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="flex-1"
+              onClick={transactionLedgerDeleteConfirm}
+              disabled={transactionLedgerDeleteState.loading === true}
+            >
+              Delete transaction
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

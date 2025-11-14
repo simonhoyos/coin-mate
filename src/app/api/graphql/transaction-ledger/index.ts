@@ -45,6 +45,10 @@ export const typeDefs = `#graphql
     category_id: UUID
   }
 
+  input TransactionLedgerDeleteInput {
+    id: UUID!
+  }
+
   extend type Query {
     expenseList: TransactionLedgerConnection
   }
@@ -52,6 +56,7 @@ export const typeDefs = `#graphql
   extend type Mutation {
     transactionLedgerCreate(input: TransactionLedgerCreateInput!): TransactionLedger
     transactionLedgerUpdate(input: TransactionLedgerUpdateInput!): TransactionLedger
+    transactionLedgerDelete(input: TransactionLedgerDeleteInput!): TransactionLedger
   }
 `;
 
@@ -172,6 +177,23 @@ export const resolvers = {
           ...args.input,
           amount_cents: args.input.amount,
         },
+      });
+
+      return { id: transactionLedgerResult.transaction?.id };
+    },
+
+    async transactionLedgerDelete(
+      _parent: never,
+      args: {
+        input: {
+          id: string;
+        };
+      },
+      context: IContext,
+    ) {
+      const transactionLedgerResult = await TransactionLedger.delete({
+        context,
+        data: args.input,
       });
 
       return { id: transactionLedgerResult.transaction?.id };
