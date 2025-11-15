@@ -50,7 +50,7 @@ export default function SignInPage() {
     `,
     {
       ssr: false,
-      fetchPolicy: 'no-cache'
+      fetchPolicy: 'no-cache',
     },
   );
 
