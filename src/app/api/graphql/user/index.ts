@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { assertNotNull } from '@/lib/assert';
 import { clearSession, createSession } from '@/lib/session';
 import type { IContext } from '@/lib/types';
+import { Space, SpaceUser } from '@/models/space';
 import { User } from '@/models/user';
 
 export const typeDefs = `#graphql
@@ -74,14 +75,50 @@ export const resolvers = {
     ) {
       const { email, password, confirmPassword } = args.input;
 
-      const signUpResult = await User.signUp({
-        context,
-        data: {
-          email,
-          password,
-          confirmPassword,
+      const signUpResult = await context.services.knex.transaction(
+        async (trx) => {
+          const signUpResult = await User.signUp({
+            trx,
+            context,
+            data: {
+              email,
+              password,
+              confirmPassword,
+            },
+          });
+
+          const spaceResult = await Space.create({
+            trx,
+            context,
+            data: {
+              userId: assertNotNull(
+                signUpResult.user?.id,
+                'User ID is null after sign up',
+              ),
+              name: 'Personal',
+              description: 'Personal space',
+            },
+          });
+
+          await SpaceUser.create({
+            trx,
+            context,
+            data: {
+              userId: assertNotNull(
+                signUpResult.user?.id,
+                'User ID is null after sign up',
+              ),
+              spaceId: assertNotNull(
+                spaceResult.space?.id,
+                'Space ID is null after space creation',
+              ),
+              role: 'admin',
+            },
+          });
+
+          return signUpResult;
         },
-      });
+      );
 
       await createSession(
         assertNotNull(signUpResult.token, 'User created without token'),

@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import type { Knex } from 'knex';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import { createLoader } from '@/lib/dataloader';
@@ -23,6 +24,7 @@ export class User {
   }
 
   static async signUp(args: {
+    trx: Knex.Transaction;
     context: IContext;
     data: z.infer<typeof UserSignUpSchema>;
   }) {
@@ -31,33 +33,23 @@ export class User {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(args.data.password, salt);
 
-    const trxResult = await args.context.services.knex.transaction(
-      async (trx) => {
-        const payload = {
-          email: args.data.email,
-          password: hash,
-        };
+    const payload = {
+      email: args.data.email,
+      password: hash,
+    };
 
-        const [user] = await trx<User>('user').insert(payload, '*');
+    const [user] = await args.trx<User>('user').insert(payload, '*');
 
-        await Audit.log({
-          trx,
-          context: args.context,
-          data: {
-            object: 'user',
-            object_id: assertNotNull(user?.id, 'User could not be created'),
-            operation: 'create',
-            payload,
-          },
-        });
-
-        return {
-          user,
-        };
+    await Audit.log({
+      trx: args.trx,
+      context: args.context,
+      data: {
+        object: 'user',
+        object_id: assertNotNull(user?.id, 'User could not be created'),
+        operation: 'create',
+        payload,
       },
-    );
-
-    const { user } = trxResult;
+    });
 
     const token =
       user != null
