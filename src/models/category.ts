@@ -54,7 +54,7 @@ export class Category {
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
         const space = await trx<Space>('space')
-          .select('id')
+          .select('space.id')
           .where({
             user_id: userId,
           })

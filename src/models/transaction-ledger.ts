@@ -5,6 +5,7 @@ import { assertNotNull } from '@/lib/assert';
 import { createLoader } from '@/lib/dataloader';
 import type { IContext } from '@/lib/types';
 import { Audit } from './audit';
+import type { Space } from './space';
 import { User } from './user';
 
 export class TransactionLedger {
@@ -67,6 +68,14 @@ export class TransactionLedger {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
+        const space = await trx<Space>('space')
+          .select('space.id')
+          .where({
+            user_id: userId,
+          })
+          .limit(1)
+          .first();
+
         const payload = omitBy(
           {
             concept: parsedData.concept,
@@ -86,6 +95,7 @@ export class TransactionLedger {
 
             user_id: userId,
             category_id: parsedData.category_id,
+            space_id: assertNotNull(space?.id, 'Space not found for the user'),
           },
           (value) => value == null,
         );
