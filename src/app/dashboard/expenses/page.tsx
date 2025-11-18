@@ -765,7 +765,11 @@ export default function ExpensesPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {categoryListData.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
+                            <SelectItem
+                              key={category.id}
+                              value={category.id}
+                              className="capitalize"
+                            >
                               {category.name}
                             </SelectItem>
                           ))}

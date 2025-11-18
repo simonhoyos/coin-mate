@@ -64,7 +64,8 @@ export const resolvers = {
         .where({
           user_id: context.user.id,
           archived_at: null,
-        });
+        })
+        .orderBy('name', 'asc');
 
       return {
         edges: compact(

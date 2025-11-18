@@ -248,7 +248,7 @@ export default function CategoriesPage() {
               className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
             >
               <div className="flex flex-col gap-2">
-                <h2 className="font-bold">{category.name}</h2>
+                <h2 className="font-bold capitalize">{category.name}</h2>
                 {(category.description ?? '') !== '' && (
                   <p>{category.description}</p>
                 )}

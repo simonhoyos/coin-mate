@@ -62,7 +62,7 @@ export class Category {
           .first();
 
         const payload = {
-          name: args.data.name,
+          name: args.data.name.toLowerCase(),
           description: args.data.description,
           user_id: userId,
           space_id: assertNotNull(space?.id, 'Space not found for the user'),
