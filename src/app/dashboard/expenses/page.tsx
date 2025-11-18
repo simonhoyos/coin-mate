@@ -708,7 +708,7 @@ export default function ExpensesPage() {
                           selected={new Date(field.value)}
                           captionLayout="dropdown"
                           onSelect={(date) => {
-                            field.onChange(date?.toLocaleString());
+                            field.onChange(date?.toISOString());
                             setDateOpen(false);
                           }}
                         />
