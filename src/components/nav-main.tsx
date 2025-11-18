@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export function NavMain({
   items,
@@ -22,6 +23,12 @@ export function NavMain({
     icon?: Icon;
   }[];
 }) {
+  const { setOpenMobile } = useSidebar();
+
+  const onLinkClick = () => {
+    setOpenMobile(false);
+  };
+
   const pathname = usePathname();
 
   return (
@@ -39,7 +46,7 @@ export function NavMain({
                   variant="ghost"
                   asChild
                 >
-                  <Link href={item.url}>
+                  <Link href={item.url} onClick={onLinkClick}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </Link>
