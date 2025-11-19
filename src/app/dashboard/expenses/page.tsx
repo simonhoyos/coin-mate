@@ -9,6 +9,7 @@ import {
   IconPencil,
   IconTrash,
 } from '@tabler/icons-react';
+import { format } from 'date-fns';
 import { groupBy } from 'lodash';
 import { ChevronDownIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -327,7 +328,7 @@ export default function ExpensesPage() {
           description: data.description,
           currency: data.currency,
           amount: data.amount,
-          transacted_at: data.transacted_at,
+          transacted_at: format(data.transacted_at, 'yyyy-MM-dd'),
           type: data.type,
           category_id: data.category_id,
         },

@@ -148,6 +148,7 @@ export const resolvers = {
         context,
         data: {
           ...args.input,
+          transacted_at: `${args.input.transacted_at}T12:00:00.000Z`,
           amount_cents: args.input.amount,
         },
       });
