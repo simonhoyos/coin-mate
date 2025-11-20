@@ -796,11 +796,12 @@ export default function ExpensesPage() {
                         (transactionLedgerUpdateState.loading === true &&
                           'opacity-50 pointer-events-none'),
                     )}
+                    onClick={() => transactionLedgerForm.reset()}
                     asChild
                   >
                     <Link
                       href={createQueryString({
-                        omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+                        omitKeys: [CREATE_EXPENSE_QUERY_PARAM, EDIT_EXPENSE_QUERY_PARAM],
                       })}
                     >
                       Cancel
