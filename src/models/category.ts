@@ -253,14 +253,66 @@ const getCategoryById = createLoader(
         'category.description',
         'category.user_id',
       ])
-      .whereIn('id', args.keys)
-      .whereNull('archived_at')) as unknown as Pick<
+      .whereIn('category.id', args.keys)
+      .whereNull('category.archived_at')) as unknown as Pick<
       Category,
       'id' | 'name' | 'description' | 'user_id'
     >[];
 
+    return args.keys.map((key) => {
+      const category = categories.find((category) => category.id === key);
+
+      return category != null
+        ? {
+            ...category,
+            getReport: () =>
+              getReportByCategoryId({
+                context: args.context,
+                id: category.id,
+              }),
+          }
+        : null;
+    });
+  },
+);
+
+const getReportByCategoryId = createLoader(
+  async (args: { context: IContext; keys: readonly string[] }) => {
+    const reports = (await args.context.services
+      .knex<Category>('category')
+      .select([
+        'category.id as categoryId',
+        args.context.services.knex.raw(
+          `count(transaction_ledger.id) as "totalCount"`,
+        ),
+        args.context.services.knex.raw(
+          `sum(transaction_ledger.amount_cents) as "totalAmountCents"`,
+        ),
+        args.context.services.knex.raw(
+          `avg(transaction_ledger.amount_cents) as "averageAmountCents"`,
+        ),
+      ])
+      .leftJoin(
+        'transaction_ledger',
+        'transaction_ledger.category_id',
+        'category.id',
+      )
+      .where('transaction_ledger.type', 'expense')
+      .where(
+        'transaction_ledger.transacted_at',
+        '>=',
+        args.context.services.knex.raw(`date_trunc('month', now())`),
+      )
+      .whereIn('category.id', args.keys)
+      .groupBy('category.id')) as unknown as {
+      categoryId: string;
+      totalCount?: number;
+      totalAmountCents?: number;
+      averageAmountCents?: number;
+    }[];
+
     return args.keys.map(
-      (key) => categories.find((category) => category.id === key) || null,
+      (key) => reports?.find((report) => report.categoryId === key) || null,
     );
   },
 );

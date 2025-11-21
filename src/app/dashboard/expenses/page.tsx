@@ -801,7 +801,10 @@ export default function ExpensesPage() {
                   >
                     <Link
                       href={createQueryString({
-                        omitKeys: [CREATE_EXPENSE_QUERY_PARAM, EDIT_EXPENSE_QUERY_PARAM],
+                        omitKeys: [
+                          CREATE_EXPENSE_QUERY_PARAM,
+                          EDIT_EXPENSE_QUERY_PARAM,
+                        ],
                       })}
                     >
                       Cancel

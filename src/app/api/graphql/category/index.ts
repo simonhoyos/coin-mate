@@ -8,10 +8,21 @@ export const typeDefs = `#graphql
 
     name: String
     description: String
+
+    report: CategoryReport
   }
 
   type CategoryConnection {
     edges: [Category]
+  }
+
+  type CategoryReport {
+    categoryId: UUID!
+
+    totalCount: Int
+
+    totalAmountCents: Int
+    averageAmountCents: Int
   }
 
   input CategoryCreateInput {
@@ -50,6 +61,11 @@ export const resolvers = {
     description: (parent: { id: string }, _args: never, context: IContext) =>
       Category.gen({ context, id: parent.id }).then(
         (category) => category?.description,
+      ),
+
+    report: async (parent: { id: string }, _args: never, context: IContext) =>
+      Category.gen({ context, id: parent.id }).then((category) =>
+        category?.getReport(),
       ),
   },
 
