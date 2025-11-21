@@ -100,7 +100,11 @@ export default function DashboardPage() {
                 <p className="flex gap-2">
                   <span className="font-bold">Average Transaction:</span>
                   {moneyFormatter.format(
-                    (category.report?.averageAmountCents ?? 0) / 100,
+                    parseFloat(
+                      (
+                        (category.report?.averageAmountCents ?? 0) / 100
+                      ).toFixed(2),
+                    ),
                   )}
                 </p>
               </div>

@@ -22,7 +22,7 @@ export const typeDefs = `#graphql
     totalCount: Int
 
     totalAmountCents: Int
-    averageAmountCents: Int
+    averageAmountCents: Float
   }
 
   input CategoryCreateInput {
