@@ -40,7 +40,9 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar> & { email?: string | undefined }) {
+export function AppSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { email?: string | undefined }) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>

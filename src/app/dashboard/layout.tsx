@@ -57,10 +57,7 @@ export default function DashboardLayout(
         } as React.CSSProperties
       }
     >
-      <AppSidebar
-        variant="inset"
-        email={meQuery.data?.me?.email}
-      />
+      <AppSidebar variant="inset" email={meQuery.data?.me?.email} />
       <SidebarInset>
         <SiteHeader />
         <div className="@container/main flex flex-1 flex-col py-4 md:py-6 px-4 lg:px-6">

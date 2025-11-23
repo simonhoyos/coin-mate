@@ -299,7 +299,10 @@ export default function ExpensesPage() {
       concept: expenseEditing?.concept ?? '',
       description: expenseEditing?.description ?? '',
       currency: expenseEditing?.currency ?? CurrencyEnum.enum.COP,
-      amount: ((expenseEditing?.amount_cents ?? 0) / 100).toFixed(2),
+      amount:
+        expenseEditing?.amount_cents != null
+          ? (expenseEditing?.amount_cents / 100).toFixed(2)
+          : '',
       transacted_at: (expenseEditing?.transacted_at != null
         ? new Date(expenseEditing.transacted_at)
         : new Date()

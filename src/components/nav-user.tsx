@@ -22,9 +22,7 @@ import {
 
 const AVATAR = '/avatars/shadcn.jpg';
 
-export function NavUser(props: {
-  email?: string | undefined;
-}) {
+export function NavUser(props: { email?: string | undefined }) {
   const router = useRouter();
 
   const { isMobile } = useSidebar();
@@ -54,7 +52,9 @@ export function NavUser(props: {
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
                 <AvatarImage src={AVATAR} alt={props.email} />
-                <AvatarFallback className="rounded-lg">{props.email?.slice(0,2).toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {props.email?.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{props.email}</span>
@@ -75,7 +75,9 @@ export function NavUser(props: {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={AVATAR} alt={props.email} />
-                  <AvatarFallback className="rounded-lg">{props.email?.slice(0,2).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {props.email?.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{props.email}</span>
