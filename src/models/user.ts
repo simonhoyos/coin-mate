@@ -57,7 +57,7 @@ export class User {
             { sub: user.id, iat: Math.floor(Date.now() / 1000) },
             args.context.config.JWT_SECRET,
             {
-              expiresIn: '7d',
+              expiresIn: '30d',
             },
           )
         : null;
@@ -96,7 +96,7 @@ export class User {
             { sub: user.id, iat: Math.floor(Date.now() / 1000) },
             args.context.config.JWT_SECRET,
             {
-              expiresIn: '7d',
+              expiresIn: '30d',
             },
           )
         : null;

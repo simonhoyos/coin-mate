@@ -9,9 +9,9 @@ export async function createSession(token: string) {
   const expiresAt = new Date(Date.now() + MS_IN_MONTH);
   const cookieStore = await cookies();
 
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
+  return cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: true,
+    secure: false,
     expires: expiresAt,
     sameSite: 'strict',
     path: '/',
