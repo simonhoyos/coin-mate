@@ -629,15 +629,16 @@ export default function ExpensesPage() {
                         id="amount"
                         aria-invalid={fieldState.invalid}
                         type="text"
+                        inputMode="decimal"
                         onChange={(e) => {
-                          const value = e.target.value ?? '';
+                          const value = e.target.value.replace(',', '.') ?? '';
 
-                          if (/^\d*\.?(\d{0,2})?$/.test(value)) {
+                          if (/^\d*(\.|,)?(\d{0,2})?$/.test(value)) {
                             field.onChange(value);
                           }
                         }}
                         onBlur={(e) => {
-                          let result = e.target.value ?? '0';
+                          let result = e.target.value.replace(',', '.') ?? '0';
 
                           if (
                             result === '' ||
