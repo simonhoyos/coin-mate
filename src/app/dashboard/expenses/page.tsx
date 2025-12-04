@@ -304,7 +304,7 @@ export default function ExpensesPage() {
           ? (expenseEditing?.amount_cents / 100).toFixed(2)
           : '',
       transacted_at: (expenseEditing?.transacted_at != null
-        ? new Date(expenseEditing.transacted_at)
+        ? new Date(`${expenseEditing.transacted_at}T12:00:00.000Z`)
         : new Date()
       ).toISOString(),
       type: expenseEditing?.type ?? TypeEnum.enum.expense,
