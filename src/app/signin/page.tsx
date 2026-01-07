@@ -111,7 +111,7 @@ export default function SignInPage() {
     });
 
     if (userSignInData?.userSignIn.token != null) {
-      redirect('/dashboard/expenses');
+      redirect('/dashboard/history');
     }
   }
 
@@ -124,7 +124,7 @@ export default function SignInPage() {
   }
 
   if (meData?.me?.id != null) {
-    redirect('/dashboard/expenses');
+    redirect('/dashboard/history');
   }
 
   return (

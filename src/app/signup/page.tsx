@@ -128,7 +128,7 @@ export default function SignUpPage() {
     });
 
     if (userSignUpData?.userSignUp.token != null) {
-      redirect('/dashboard/expenses');
+      redirect('/dashboard/history');
     }
   }
 
@@ -146,7 +146,7 @@ export default function SignUpPage() {
   }
 
   if (meData?.me?.id != null) {
-    redirect('/dashboard/expenses');
+    redirect('/dashboard/history');
   }
 
   return (

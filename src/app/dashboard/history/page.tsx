@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const CurrencyEnum = z.enum(['COP', 'USD'], 'Currency must be COP or USD');
@@ -88,7 +89,7 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
 const CREATE_EXPENSE_QUERY_PARAM = 'create_expense';
 const EDIT_EXPENSE_QUERY_PARAM = 'edit_expense';
 
-export default function ExpensesPage() {
+export default function HistoryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -102,6 +103,8 @@ export default function ExpensesPage() {
   const [deletingTransactionId, setDeletingTransactionId] = React.useState<
     string | null
   >(null);
+
+  const currentType = searchParams.get('type') ?? 'expense';
 
   const createQueryString = React.useCallback(
     (args: { appendKeys?: { [key: string]: string }; omitKeys?: string[] }) => {
@@ -145,8 +148,8 @@ export default function ExpensesPage() {
     };
   }>(
     gql`
-      query ExpenseListQuery {
-        expenseList {
+      query ExpenseListQuery($type: String) {
+        expenseList(type: $type) {
           edges {
             id
 
@@ -166,6 +169,11 @@ export default function ExpensesPage() {
         }
       }
     `,
+    {
+      variables: {
+        type: currentType,
+      },
+    },
   );
 
   const expenseListData = expenseListQuery.data?.expenseList?.edges ?? [];
@@ -288,10 +296,11 @@ export default function ExpensesPage() {
       currency: CurrencyEnum.enum.COP,
       amount: '',
       transacted_at: new Date().toISOString(),
-      type: TypeEnum.enum.expense,
+      type:
+        currentType === 'income' ? TypeEnum.enum.income : TypeEnum.enum.expense,
       category_id: '',
     }),
-    [],
+    [currentType],
   );
 
   const transactionLedgerValues = React.useMemo(
@@ -307,10 +316,14 @@ export default function ExpensesPage() {
         ? new Date(`${expenseEditing.transacted_at}T12:00:00.000Z`)
         : new Date()
       ).toISOString(),
-      type: expenseEditing?.type ?? TypeEnum.enum.expense,
+      type:
+        expenseEditing?.type ??
+        (currentType === 'income'
+          ? TypeEnum.enum.income
+          : TypeEnum.enum.expense),
       category_id: expenseEditing?.category?.id ?? '',
     }),
-    [expenseEditing],
+    [expenseEditing, currentType],
   );
 
   const transactionLedgerForm = useForm({
@@ -406,7 +419,7 @@ export default function ExpensesPage() {
     <>
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
-          <h1>Expenses</h1>
+          <h1>History</h1>
           <Button type="button" variant="outline" asChild>
             <Link
               href={createQueryString({
@@ -421,6 +434,25 @@ export default function ExpensesPage() {
             </Link>
           </Button>
         </div>
+
+        <Tabs
+          defaultValue="expense"
+          value={currentType}
+          onValueChange={(value) =>
+            router.push(
+              createQueryString({
+                appendKeys: {
+                  type: value,
+                },
+              }),
+            )
+          }
+        >
+          <TabsList>
+            <TabsTrigger value="expense">Expenses</TabsTrigger>
+            <TabsTrigger value="income">Incomes</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {expenseListQuery.loading === true ? (
           <div className="flex flex-1 justify-center">

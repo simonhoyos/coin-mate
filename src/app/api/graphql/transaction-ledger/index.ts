@@ -50,7 +50,7 @@ export const typeDefs = `#graphql
   }
 
   extend type Query {
-    expenseList: TransactionLedgerConnection
+    expenseList(type: String): TransactionLedgerConnection
   }
 
   extend type Mutation {
@@ -103,14 +103,20 @@ export const resolvers = {
   },
 
   Query: {
-    async expenseList(_parent: never, _args: never, context: IContext) {
+    async expenseList(
+      _parent: never,
+      args: { type?: string },
+      context: IContext,
+    ) {
       if (context.user == null) {
         throw new Error('Unauthorized');
       }
 
+      const type = args.type ?? 'expense';
+
       const transactions = await context.services
         .knex<TransactionLedger>('transaction_ledger')
-        .where({ user_id: context.user.id })
+        .where({ user_id: context.user.id, type })
         .orderBy('transacted_at', 'desc');
 
       return {
