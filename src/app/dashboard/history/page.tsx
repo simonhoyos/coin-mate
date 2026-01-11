@@ -95,7 +95,7 @@ export default function HistoryPage() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const createExpenseModalOpen =
+  const createTransactionModalOpen =
     searchParams.get(CREATE_TRANSACTION_QUERY_PARAM) === 'true';
 
   const editingTransactionId = searchParams.get(EDIT_TRANSACTION_QUERY_PARAM);
@@ -231,7 +231,7 @@ export default function HistoryPage() {
       }
     >(
       gql`
-        mutation ExpenseCreateMutation($input: TransactionLedgerCreateInput!) {
+        mutation TransactionCreateMutation($input: TransactionLedgerCreateInput!) {
           transactionLedgerCreate(input: $input) {
             id
           }
@@ -260,7 +260,7 @@ export default function HistoryPage() {
       }
     >(
       gql`
-        mutation ExpenseUpdateMutation($input: TransactionLedgerUpdateInput!) {
+        mutation TransactionUpdateMutation($input: TransactionLedgerUpdateInput!) {
           transactionLedgerUpdate(input: $input) {
             id
           }
@@ -282,7 +282,7 @@ export default function HistoryPage() {
       }
     >(
       gql`
-        mutation ExpenseDeleteMutation($input: TransactionLedgerDeleteInput!) {
+        mutation TransactionDeleteMutation($input: TransactionLedgerDeleteInput!) {
           transactionLedgerDelete(input: $input) {
             id
           }
@@ -554,7 +554,7 @@ export default function HistoryPage() {
       </div>
 
       <Dialog
-        open={createExpenseModalOpen || transactionEditing != null}
+        open={createTransactionModalOpen || transactionEditing != null}
         onOpenChange={(open) => {
           if (open === false) {
             router.push(
