@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { compact } from 'lodash';
 import type { IContext } from '@/lib/types';
-import { TransactionLedger } from '@/models/transaction-ledger';
+import { TransactionLedger, TypeEnum } from '@/models/transaction-ledger';
 
 export const typeDefs = `#graphql
   type TransactionLedger {
@@ -49,8 +49,14 @@ export const typeDefs = `#graphql
     id: UUID!
   }
 
+  enum TransactionLedgerType {
+    expense
+    income
+    saving
+  }
+
   extend type Query {
-    expenseList(type: String): TransactionLedgerConnection
+    transactionLedgerList(type: TransactionLedgerType): TransactionLedgerConnection
   }
 
   extend type Mutation {
@@ -103,7 +109,7 @@ export const resolvers = {
   },
 
   Query: {
-    async expenseList(
+    async transactionLedgerList(
       _parent: never,
       args: { type?: string },
       context: IContext,
@@ -112,12 +118,14 @@ export const resolvers = {
         throw new Error('Unauthorized');
       }
 
-      const type = args.type ?? 'expense';
+      const type = TypeEnum.parse(args.type ?? 'expense');
 
       const transactions = await context.services
         .knex<TransactionLedger>('transaction_ledger')
         .where({ user_id: context.user.id, type })
-        .orderBy('transacted_at', 'desc');
+        .whereNull('archived_at')
+        .orderBy('transacted_at', 'desc')
+        .limit(50);
 
       return {
         edges: compact(

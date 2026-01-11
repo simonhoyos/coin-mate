@@ -75,7 +75,8 @@ const TransactionLedgerFormSchema = z.object({
     .refine(
       (value) => (value.match(/\./g) || []).length <= 1,
       'Maximum two decimal places allowed',
-    ),
+    )
+    .regex(/^\d+(\.\d{1,2})?$/, 'Enter a valid positive amount (e.g., 10.50)'),
   transacted_at: z.string().min(1, 'Date is required'),
   type: TypeEnum,
   category_id: z.uuid('Select a valid category'),
@@ -86,8 +87,8 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
   currency: 'COP',
 });
 
-const CREATE_EXPENSE_QUERY_PARAM = 'create_expense';
-const EDIT_EXPENSE_QUERY_PARAM = 'edit_expense';
+const CREATE_TRANSACTION_QUERY_PARAM = 'create_transaction';
+const EDIT_TRANSACTION_QUERY_PARAM = 'edit_transaction';
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -95,9 +96,9 @@ export default function HistoryPage() {
   const pathname = usePathname();
 
   const createExpenseModalOpen =
-    searchParams.get(CREATE_EXPENSE_QUERY_PARAM) === 'true';
+    searchParams.get(CREATE_TRANSACTION_QUERY_PARAM) === 'true';
 
-  const editingExpenseId = searchParams.get(EDIT_EXPENSE_QUERY_PARAM);
+  const editingTransactionId = searchParams.get(EDIT_TRANSACTION_QUERY_PARAM);
 
   const [dateOpen, setDateOpen] = React.useState(false);
   const [deletingTransactionId, setDeletingTransactionId] = React.useState<
@@ -127,8 +128,8 @@ export default function HistoryPage() {
     [pathname, searchParams],
   );
 
-  const expenseListQuery = useQuery<{
-    expenseList?: {
+  const transactionListQuery = useQuery<{
+    transactionLedgerList?: {
       edges?: {
         id: string;
 
@@ -148,8 +149,8 @@ export default function HistoryPage() {
     };
   }>(
     gql`
-      query ExpenseListQuery($type: String) {
-        expenseList(type: $type) {
+      query TransactionListQuery($type: TransactionLedgerType) {
+        transactionLedgerList(type: $type) {
           edges {
             id
 
@@ -176,15 +177,15 @@ export default function HistoryPage() {
     },
   );
 
-  const expenseListData = expenseListQuery.data?.expenseList?.edges ?? [];
+  const transactionListData = transactionListQuery.data?.transactionLedgerList?.edges ?? [];
 
-  const expenseListGroupedByDate = React.useMemo(() => {
-    return groupBy(expenseListData, 'transacted_at');
-  }, [expenseListData]);
+  const transactionListGroupedByDate = React.useMemo(() => {
+    return groupBy(transactionListData, 'transacted_at');
+  }, [transactionListData]);
 
-  const expenseEditing = React.useMemo(() => {
-    return expenseListData.find((expense) => expense.id === editingExpenseId);
-  }, [editingExpenseId, expenseListData]);
+  const transactionEditing = React.useMemo(() => {
+    return transactionListData.find((expense) => expense.id === editingTransactionId);
+  }, [editingTransactionId, transactionListData]);
 
   const categoryListQuery = useQuery<{
     categoryList?: {
@@ -305,25 +306,25 @@ export default function HistoryPage() {
 
   const transactionLedgerValues = React.useMemo(
     () => ({
-      concept: expenseEditing?.concept ?? '',
-      description: expenseEditing?.description ?? '',
-      currency: expenseEditing?.currency ?? CurrencyEnum.enum.COP,
+      concept: transactionEditing?.concept ?? '',
+      description: transactionEditing?.description ?? '',
+      currency: transactionEditing?.currency ?? CurrencyEnum.enum.COP,
       amount:
-        expenseEditing?.amount_cents != null
-          ? (expenseEditing?.amount_cents / 100).toFixed(2)
+        transactionEditing?.amount_cents != null
+          ? (transactionEditing?.amount_cents / 100).toFixed(2)
           : '',
-      transacted_at: (expenseEditing?.transacted_at != null
-        ? new Date(`${expenseEditing.transacted_at}T12:00:00.000Z`)
+      transacted_at: (transactionEditing?.transacted_at != null
+        ? new Date(`${transactionEditing.transacted_at}T12:00:00.000Z`)
         : new Date()
       ).toISOString(),
       type:
-        expenseEditing?.type ??
+        transactionEditing?.type ??
         (currentType === 'income'
           ? TypeEnum.enum.income
           : TypeEnum.enum.expense),
-      category_id: expenseEditing?.category?.id ?? '',
+      category_id: transactionEditing?.category?.id ?? '',
     }),
-    [expenseEditing, currentType],
+    [transactionEditing, currentType],
   );
 
   const transactionLedgerForm = useForm({
@@ -351,24 +352,24 @@ export default function HistoryPage() {
       },
     });
 
-    await expenseListQuery.refetch();
+    await transactionListQuery.refetch();
 
     transactionLedgerForm.reset();
     router.push(
       createQueryString({
-        omitKeys: [CREATE_EXPENSE_QUERY_PARAM, EDIT_EXPENSE_QUERY_PARAM],
+        omitKeys: [CREATE_TRANSACTION_QUERY_PARAM, EDIT_TRANSACTION_QUERY_PARAM],
       }),
     );
   }
 
   const transactionLedgerUpdateSubmit = React.useCallback(
     async (data: z.infer<typeof TransactionLedgerFormSchema>) => {
-      if (editingExpenseId == null) return;
+      if (editingTransactionId == null) return;
 
       await transactionLedgerUpdateMutation({
         variables: {
           input: {
-            id: editingExpenseId,
+            id: editingTransactionId,
             concept: data.concept,
             description: data.description,
             currency: data.currency,
@@ -380,20 +381,20 @@ export default function HistoryPage() {
         },
       });
 
-      await expenseListQuery.refetch();
+      await transactionListQuery.refetch();
 
       transactionLedgerForm.reset();
       router.push(
         createQueryString({
-          omitKeys: [CREATE_EXPENSE_QUERY_PARAM, EDIT_EXPENSE_QUERY_PARAM],
+          omitKeys: [CREATE_TRANSACTION_QUERY_PARAM, EDIT_TRANSACTION_QUERY_PARAM],
         }),
       );
     },
     [
-      editingExpenseId,
+      editingTransactionId,
       transactionLedgerForm.reset,
       transactionLedgerUpdateMutation,
-      expenseListQuery,
+      transactionListQuery,
       router,
       createQueryString,
     ],
@@ -410,7 +411,7 @@ export default function HistoryPage() {
       },
     });
 
-    await expenseListQuery.refetch();
+    await transactionListQuery.refetch();
 
     setDeletingTransactionId(null);
   }
@@ -424,9 +425,9 @@ export default function HistoryPage() {
             <Link
               href={createQueryString({
                 appendKeys: {
-                  [CREATE_EXPENSE_QUERY_PARAM]: 'true',
+                  [CREATE_TRANSACTION_QUERY_PARAM]: 'true',
                 },
-                omitKeys: [EDIT_EXPENSE_QUERY_PARAM],
+                omitKeys: [EDIT_TRANSACTION_QUERY_PARAM],
               })}
             >
               <IconCirclePlus />
@@ -436,7 +437,6 @@ export default function HistoryPage() {
         </div>
 
         <Tabs
-          defaultValue="expense"
           value={currentType}
           onValueChange={(value) =>
             router.push(
@@ -454,11 +454,11 @@ export default function HistoryPage() {
           </TabsList>
         </Tabs>
 
-        {expenseListQuery.loading === true ? (
+        {transactionListQuery.loading === true ? (
           <div className="flex flex-1 justify-center">
             <Spinner className="size-12 text-primary mt-10" />
           </div>
-        ) : expenseListData.length === 0 ? (
+        ) : transactionListData.length === 0 ? (
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -476,9 +476,9 @@ export default function HistoryPage() {
                   <Link
                     href={createQueryString({
                       appendKeys: {
-                        [CREATE_EXPENSE_QUERY_PARAM]: 'true',
+                        [CREATE_TRANSACTION_QUERY_PARAM]: 'true',
                       },
-                      omitKeys: [EDIT_EXPENSE_QUERY_PARAM],
+                      omitKeys: [EDIT_TRANSACTION_QUERY_PARAM],
                     })}
                   >
                     <IconCirclePlus />
@@ -490,32 +490,32 @@ export default function HistoryPage() {
           </Empty>
         ) : (
           <section className="flex flex-1 flex-col gap-4">
-            {Object.entries(expenseListGroupedByDate).map(
-              ([groupDate, expenseList]) => (
+            {Object.entries(transactionListGroupedByDate).map(
+              ([groupDate, transactionList]) => (
                 <section key={groupDate} className="flex flex-col gap-4">
                   <h2 className="font-semibold text-lg">{groupDate}</h2>
 
-                  {expenseList.map((expense) => (
+                  {transactionList.map((transaction) => (
                     <div
-                      key={expense.id}
+                      key={transaction.id}
                       className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
                     >
                       {
                         <p className="text-xs text-gray-800">
-                          {expense.category?.name} ({expense.type})
+                          {transaction.category?.name} ({transaction.type})
                         </p>
                       }
                       <div className="flex justify-between w-full">
                         <div className="flex flex-col gap-2">
-                          <h2 className="font-bold">{expense.concept}</h2>
-                          {(expense.description ?? '') !== '' && (
-                            <p>{expense.description}</p>
+                          <h2 className="font-bold">{transaction.concept}</h2>
+                          {(transaction.description ?? '') !== '' && (
+                            <p>{transaction.description}</p>
                           )}
                         </div>
                         <div>
                           <p>
                             {moneyFormatter.format(
-                              (expense.amount_cents ?? 0) / 100,
+                              (transaction.amount_cents ?? 0) / 100,
                             )}
                           </p>
                         </div>
@@ -524,9 +524,9 @@ export default function HistoryPage() {
                             <Link
                               href={createQueryString({
                                 appendKeys: {
-                                  [EDIT_EXPENSE_QUERY_PARAM]: expense.id,
+                                  [EDIT_TRANSACTION_QUERY_PARAM]: transaction.id,
                                 },
-                                omitKeys: [CREATE_EXPENSE_QUERY_PARAM],
+                                omitKeys: [CREATE_TRANSACTION_QUERY_PARAM],
                               })}
                             >
                               <IconPencil />
@@ -537,7 +537,7 @@ export default function HistoryPage() {
                           <Button
                             type="button"
                             variant="ghost"
-                            onClick={() => setDeletingTransactionId(expense.id)}
+                            onClick={() => setDeletingTransactionId(transaction.id)}
                           >
                             <IconTrash className="text-destructive" />
                             <span className="sr-only">Delete transaction</span>
@@ -554,14 +554,14 @@ export default function HistoryPage() {
       </div>
 
       <Dialog
-        open={createExpenseModalOpen || expenseEditing != null}
+        open={createExpenseModalOpen || transactionEditing != null}
         onOpenChange={(open) => {
           if (open === false) {
             router.push(
               createQueryString({
                 omitKeys: [
-                  CREATE_EXPENSE_QUERY_PARAM,
-                  EDIT_EXPENSE_QUERY_PARAM,
+                  CREATE_TRANSACTION_QUERY_PARAM,
+                  EDIT_TRANSACTION_QUERY_PARAM,
                 ],
               }),
             );
@@ -571,14 +571,14 @@ export default function HistoryPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {expenseEditing != null
+              {transactionEditing != null
                 ? 'Edit transaction'
                 : 'Create a new transaction'}
             </DialogTitle>
           </DialogHeader>
           <form
             onSubmit={transactionLedgerForm.handleSubmit(
-              expenseEditing != null
+              transactionEditing != null
                 ? transactionLedgerUpdateSubmit
                 : transactionLedgerCreateSubmit,
             )}
@@ -838,8 +838,8 @@ export default function HistoryPage() {
                     <Link
                       href={createQueryString({
                         omitKeys: [
-                          CREATE_EXPENSE_QUERY_PARAM,
-                          EDIT_EXPENSE_QUERY_PARAM,
+                          CREATE_TRANSACTION_QUERY_PARAM,
+                          EDIT_TRANSACTION_QUERY_PARAM,
                         ],
                       })}
                     >
@@ -854,7 +854,7 @@ export default function HistoryPage() {
                       transactionLedgerUpdateState.loading === true
                     }
                   >
-                    {expenseEditing != null
+                    {transactionEditing != null
                       ? 'Update transaction'
                       : 'Create transaction'}
                   </Button>

@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
         destination: '/dashboard/history',
         permanent: true,
       },
+      {
+        source: '/dashboard/expenses',
+        destination: '/dashboard/history',
+        permanent: true,
+      }
     ];
   },
 };
