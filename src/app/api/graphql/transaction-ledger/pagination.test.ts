@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolvers } from './index';
+import { createTransactionLedgerFactory } from '@/lib/testing/factories/transaction-ledger';
 
 vi.mock('@/models/transaction-ledger', () => ({
   TypeEnum: {
     parse: vi.fn((v) => v),
   },
   TransactionLedger: {
-    gen: vi.fn().mockResolvedValue({ id: '123' }),
+    gen: vi.fn().mockImplementation((args) => Promise.resolve({ id: args.id })),
   },
 }));
 
@@ -15,9 +16,11 @@ describe('transactionLedgerList pagination', () => {
   let context: any;
 
   beforeEach(() => {
+    const mockTransaction = createTransactionLedgerFactory({ id: '123' });
+
     const firstPromise = {
       then: vi.fn(function (resolve) {
-        return Promise.resolve(resolve({ id: '123', transacted_at: new Date().toISOString() }));
+        return Promise.resolve(resolve(mockTransaction));
       }),
     };
 
@@ -30,9 +33,7 @@ describe('transactionLedgerList pagination', () => {
       limit: vi.fn().mockReturnThis(),
       first: vi.fn().mockReturnValue(firstPromise),
       then: vi.fn(function (resolve) {
-        return Promise.resolve(resolve([
-          { id: '123', transacted_at: new Date().toISOString() }
-        ]));
+        return Promise.resolve(resolve([mockTransaction]));
       }),
     };
 
