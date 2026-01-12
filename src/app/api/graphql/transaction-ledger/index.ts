@@ -19,6 +19,7 @@ export const typeDefs = `#graphql
 
   type TransactionLedgerConnection {
     edges: [TransactionLedger]
+    cursor: String
   }
 
   input TransactionLedgerCreateInput {
@@ -56,7 +57,7 @@ export const typeDefs = `#graphql
   }
 
   extend type Query {
-    transactionLedgerList(type: TransactionLedgerType): TransactionLedgerConnection
+    transactionLedgerList(type: TransactionLedgerType, limit: Int, cursor: String): TransactionLedgerConnection
   }
 
   extend type Mutation {
@@ -111,7 +112,7 @@ export const resolvers = {
   Query: {
     async transactionLedgerList(
       _parent: never,
-      args: { type?: string },
+      args: { type?: string; limit?: number; cursor?: string },
       context: IContext,
     ) {
       if (context.user == null) {
@@ -119,18 +120,45 @@ export const resolvers = {
       }
 
       const type = TypeEnum.parse(args.type ?? 'expense');
+      const limit = args.limit ?? 50;
+      const cursor = args.cursor;
 
-      const transactions = await context.services
+      let query = context.services
         .knex<TransactionLedger>('transaction_ledger')
         .where({ user_id: context.user.id, type })
         .whereNull('archived_at')
         .orderBy('transacted_at', 'desc')
-        .limit(50);
+        .orderBy('id', 'desc')
+        .limit(limit + 1);
+
+      if (cursor) {
+        const cursorTransaction = await context.services
+          .knex<TransactionLedger>('transaction_ledger')
+          .where({ id: cursor })
+          .first();
+
+        if (cursorTransaction) {
+          query = query.andWhere((qb) => {
+            qb.where('transacted_at', '<', cursorTransaction.transacted_at).orWhere(
+              (qb2) => {
+                qb2
+                  .where('transacted_at', '=', cursorTransaction.transacted_at)
+                  .andWhere('id', '<', cursorTransaction.id);
+              },
+            );
+          });
+        }
+      }
+
+      const transactions = await query;
+
+      const hasNextPage = transactions.length > limit;
+      const results = hasNextPage ? transactions.slice(0, limit) : transactions;
 
       return {
         edges: compact(
           await Promise.all(
-            transactions.map((transaction) =>
+            results.map((transaction) =>
               TransactionLedger.gen({ context, id: transaction.id }).then(
                 (transaction) =>
                   transaction != null ? { id: transaction.id } : undefined,
@@ -138,6 +166,7 @@ export const resolvers = {
             ),
           ),
         ),
+        cursor: hasNextPage ? results[results.length - 1]?.id : null,
       };
     },
   },

@@ -15,12 +15,20 @@ describe('transactionLedgerList pagination', () => {
   let context: any;
 
   beforeEach(() => {
+    const firstPromise = {
+      then: vi.fn(function (resolve) {
+        return Promise.resolve(resolve({ id: '123', transacted_at: new Date().toISOString() }));
+      }),
+    };
+
     mockKnex = {
       where: vi.fn().mockReturnThis(),
       whereNull: vi.fn().mockReturnThis(),
       andWhere: vi.fn().mockReturnThis(),
+      whereIn: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
+      first: vi.fn().mockReturnValue(firstPromise),
       then: vi.fn(function (resolve) {
         return Promise.resolve(resolve([
           { id: '123', transacted_at: new Date().toISOString() }
@@ -38,33 +46,29 @@ describe('transactionLedgerList pagination', () => {
     vi.clearAllMocks();
   });
 
-  it('uses default limit of 50 if not provided', async () => {
-     // @ts-expect-error
+  it('uses default limit of 50 (+1) if not provided', async () => {
+     // @ts-ignore
      await resolvers.Query.transactionLedgerList(null, {}, context);
-
-     expect(mockKnex.limit).toHaveBeenCalledWith(50);
+     expect(mockKnex.limit).toHaveBeenCalledWith(51);
   });
 
-  it('uses provided limit', async () => {
+  it('uses provided limit (+1)', async () => {
      const args = { limit: 10 };
-     // @ts-expect-error
+     // @ts-ignore
      await resolvers.Query.transactionLedgerList(null, args, context);
-
      expect(mockKnex.limit).toHaveBeenCalledWith(11);
   });
 
   it('uses cursor for pagination', async () => {
      const args = { limit: 10, cursor: 'prev-cursor-id' };
-     // @ts-expect-error
+     // @ts-ignore
      await resolvers.Query.transactionLedgerList(null, args, context);
-
      expect(mockKnex.andWhere).toHaveBeenCalled();
   });
 
   it('returns cursor in response', async () => {
-     // @ts-expect-error
+     // @ts-ignore
      const result = await resolvers.Query.transactionLedgerList(null, {}, context);
-
      expect(result).toHaveProperty('cursor');
   });
 });
