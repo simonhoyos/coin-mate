@@ -1,13 +1,24 @@
-import { User } from '@/models/user';
+import bcrypt from 'bcryptjs';
+import type { Knex } from 'knex';
+import type { User } from '@/models/user';
 
-export function createUserFactory(overrides: Partial<User> = {}): User {
-  const id = crypto.randomUUID();
-  return {
-    id,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    email: `user-${id.slice(0, 8)}@example.com`,
-    password: '$2a$10$hashedpasswordplaceholder',
+export async function createUser(
+  knex: Knex,
+  overrides: Partial<User> = {},
+): Promise<User | undefined> {
+  const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(
+    overrides.password ?? 'Test-password123',
+    salt,
+  );
+
+  const payload = {
+    email: `user-${Date.now}@example.com`,
     ...overrides,
-  } as User;
+    password: hash,
+  };
+
+  const [user] = await knex<User>('user').insert(payload, '*');
+
+  return user;
 }

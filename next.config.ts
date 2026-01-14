@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
         source: '/dashboard/expenses',
         destination: '/dashboard/history',
         permanent: true,
-      }
+      },
     ];
   },
 };

@@ -23,6 +23,7 @@ export class TransactionLedger {
 
   user_id!: string;
   category_id!: string;
+  space_id!: string;
 
   archived_at?: Date | string | null;
 

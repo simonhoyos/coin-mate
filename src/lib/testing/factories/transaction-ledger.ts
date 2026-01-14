@@ -1,19 +1,41 @@
-import { TransactionLedger } from '@/models/transaction-ledger';
+import type { Knex } from 'knex';
+import { assertNotNull } from '@/lib/assert';
+import type { TransactionLedger } from '@/models/transaction-ledger';
+import { createCategory } from './category';
+import { createSpace } from './space';
+import { createUser } from './user';
 
-export function createTransactionLedgerFactory(overrides: Partial<TransactionLedger> = {}): TransactionLedger {
-  const id = crypto.randomUUID();
-  return {
-    id,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    concept: `Transaction ${id.slice(0, 4)}`,
+export async function createTransactionLedger(
+  knex: Knex,
+  overrides: Partial<TransactionLedger> = {},
+): Promise<TransactionLedger | undefined> {
+  const payload = {
+    concept: `Transaction-${Date.now}`,
     description: 'Test transaction description',
-    currency: 'USD',
-    amount_cents: 1000,
+    currency: 'COP',
+    original_currency: 'COP',
+    amount_cents: 100000,
+    original_amount_cents: 100000,
     transacted_at: new Date().toISOString(),
     type: 'expense',
-    user_id: crypto.randomUUID(),
-    category_id: crypto.randomUUID(),
+    user_id: assertNotNull(
+      overrides.user_id ?? (await createUser(knex))?.id,
+      'createTransactionLedger: user must be defined',
+    ),
+    category_id: assertNotNull(
+      overrides.category_id ?? (await createCategory(knex))?.id,
+      'createTransactionLedger: category must be defined',
+    ),
+    space_id: assertNotNull(
+      overrides.space_id ?? (await createSpace(knex))?.id,
+      'createTransactionLedger: space must be defined',
+    ),
     ...overrides,
-  } as TransactionLedger;
+  };
+
+  const [transaction] = await knex<TransactionLedger>(
+    'transaction_ledger',
+  ).insert(payload, '*');
+
+  return transaction;
 }

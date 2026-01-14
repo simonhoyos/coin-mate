@@ -1,14 +1,28 @@
-import { Category } from '@/models/category';
+import type { Knex } from 'knex';
+import { assertNotNull } from '@/lib/assert';
+import type { Category } from '@/models/category';
+import { createSpace } from './space';
+import { createUser } from './user';
 
-export function createCategoryFactory(overrides: Partial<Category> = {}): Category {
-  const id = crypto.randomUUID();
-  return {
-    id,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    name: `Category ${id.slice(0, 4)}`,
+export async function createCategory(
+  knex: Knex,
+  overrides: Partial<Category> = {},
+): Promise<Category | undefined> {
+  const payload = {
+    name: `Category-${Date.now}`,
     description: 'Test category description',
-    user_id: crypto.randomUUID(),
+    user_id: assertNotNull(
+      overrides.user_id ?? (await createUser(knex))?.id,
+      'createCategory: user must be defined',
+    ),
+    space_id: assertNotNull(
+      overrides.space_id ?? (await createSpace(knex))?.id,
+      'createCategory: space must be defined',
+    ),
     ...overrides,
-  } as Category;
+  };
+
+  const [category] = await knex<Category>('category').insert(payload, '*');
+
+  return category;
 }
