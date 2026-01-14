@@ -9,7 +9,7 @@ export async function createCategory(
   overrides: Partial<Category> = {},
 ): Promise<Category | undefined> {
   const payload = {
-    name: `Category-${Date.now}`,
+    name: `Category-${Date.now()}`,
     description: 'Test category description',
     user_id: assertNotNull(
       overrides.user_id ?? (await createUser(knex))?.id,

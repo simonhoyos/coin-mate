@@ -10,7 +10,7 @@ export async function createTransactionLedger(
   overrides: Partial<TransactionLedger> = {},
 ): Promise<TransactionLedger | undefined> {
   const payload = {
-    concept: `Transaction-${Date.now}`,
+    concept: `Transaction-${Date.now()}`,
     description: 'Test transaction description',
     currency: 'COP',
     original_currency: 'COP',

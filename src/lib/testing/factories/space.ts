@@ -8,7 +8,7 @@ export async function createSpace(
   overrides: Partial<Space> = {},
 ): Promise<Space | undefined> {
   const payload = {
-    name: `Space-${Date.now}`,
+    name: `Space-${Date.now()}`,
     user_id: assertNotNull(
       overrides.user_id ?? (await createUser(knex))?.id,
       'createSpace: user must be defined',

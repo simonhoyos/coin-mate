@@ -1,13 +1,12 @@
 import knex from 'knex';
+import { omitBy } from 'lodash';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { assertNotNull } from '@/lib/assert.js';
-import { createTestContext } from '@/lib/testing/context.js';
+import { createTestContext, type ITestContext } from '@/lib/testing/context.js';
 import { createCategory } from '@/lib/testing/factories/category';
 import { createSpace } from '@/lib/testing/factories/space';
 import { createTransactionLedger } from '@/lib/testing/factories/transaction-ledger';
 import { createUser } from '@/lib/testing/factories/user';
-import type { IContextInner } from '@/lib/types.js';
-import type { User } from '@/models/user.js';
 import knexConfig from '../../../../../knexfile.js';
 import { resolvers } from './index';
 
@@ -15,40 +14,61 @@ const testKnex = knex(knexConfig);
 
 describe('transactionLedgerList pagination (integration)', () => {
   const destroyers: (() => Promise<unknown>)[] = [];
-  let context: IContextInner;
-  let user: User | undefined;
+  let context: ITestContext;
 
   beforeAll(async () => {
-    user = await createUser(testKnex);
-
     context = await createTestContext();
+    destroyers.push(context.cleanup);
   });
 
   afterAll(async () => Promise.all(destroyers.map((destroy) => destroy())));
 
   it('returns the requested limit of transactions', async () => {
-    const space = await createSpace(testKnex, { user_id: user.id });
+    const user = await createUser(testKnex);
+    const testContext = context.login(user);
 
-    const category = await createCategory(testKnex, {
-      ...(user?.id != null ? { user_id: user.id } : {}),
-      ...(space?.id != null ? { space_id: space.id } : {}),
-    });
+    const space = await createSpace(
+      testKnex,
+      omitBy(
+        {
+          user_id: user?.id,
+        },
+        (value) => value == null,
+      ),
+    );
+
+    const category = await createCategory(
+      testKnex,
+      omitBy(
+        {
+          user_id: user?.id,
+          space_id: space?.id,
+        },
+        (value) => value == null,
+      ),
+    );
 
     await Promise.all(
       [...Array(12)].map((_, i) =>
-        createTransactionLedger(testKnex, {
-          ...(user?.id != null ? { user_id: user.id } : {}),
-          ...(category?.id != null ? { category_id: category.id } : {}),
-          ...(space?.id != null ? { space_id: space.id } : {}),
-          transacted_at: new Date(2026, 0, 11, 12, 0, 0 - i).toISOString(),
-        }),
+        createTransactionLedger(
+          testKnex,
+          omitBy(
+            {
+              user_id: user?.id,
+              category_id: category?.id,
+              space_id: space?.id,
+              transacted_at: new Date(2026, 0, 11, 12, 0, 0 - i).toISOString(),
+            },
+            (value) => value == null,
+          ),
+        ),
       ),
     );
 
     const result = await resolvers.Query.transactionLedgerList(
-      null,
+      null as never,
       { limit: 10 },
-      context,
+      testContext,
     );
 
     expect(result.edges.length).toBe(10);
@@ -57,40 +77,62 @@ describe('transactionLedgerList pagination (integration)', () => {
 
   it('paginates correctly using cursor', async () => {
     const ITEMS_PER_PAGE = 4;
+    const user = await createUser(testKnex);
+    const testContext = context.login(user);
 
-    const space = await createSpace(testKnex, {
-      ...(user?.id != null ? { user_id: user.id } : {}),
-    });
+    const space = await createSpace(
+      testKnex,
+      omitBy(
+        {
+          user_id: user?.id,
+        },
+        (value) => value == null,
+      ),
+    );
 
-    const category = await createCategory(testKnex, {
-      ...(user?.id != null ? { user_id: user.id } : {}),
-      ...(space?.id != null ? { space_id: space.id } : {}),
-    });
+    const category = await createCategory(
+      testKnex,
+      omitBy(
+        {
+          user_id: user?.id,
+          space_id: space?.id,
+        },
+        (value) => value == null,
+      ),
+    );
 
     await Promise.all(
       [...Array(10)].map((_, i) =>
-        createTransactionLedger(testKnex, {
-          user_id: user.id,
-          ...(category?.id != null ? { category_id: category.id } : {}),
-          ...(space?.id != null ? { space_id: space.id } : {}),
-          transacted_at: new Date(2026, 0, 11, 12, 0, 0 - i).toISOString(),
-        }),
+        createTransactionLedger(
+          testKnex,
+          omitBy(
+            {
+              user_id: user?.id,
+              category_id: category?.id,
+              space_id: space?.id,
+              transacted_at: new Date(2026, 0, 11, 12, 0, 0 - i).toISOString(),
+            },
+            (value) => value == null,
+          ),
+        ),
       ),
     );
 
     const firstPage = await resolvers.Query.transactionLedgerList(
-      null,
+      null as never,
       { limit: ITEMS_PER_PAGE },
-      context,
+      testContext,
     );
+
     expect(firstPage.edges.length).toBe(ITEMS_PER_PAGE);
     expect(firstPage.cursor).not.toBeNull();
 
     const secondPage = await resolvers.Query.transactionLedgerList(
-      null,
-      { limit: 4, cursor: assertNotNull(firstPage.cursor) },
-      context,
+      null as never,
+      { limit: ITEMS_PER_PAGE, cursor: assertNotNull(firstPage.cursor) },
+      testContext,
     );
+
     expect(secondPage.edges.length).toBe(ITEMS_PER_PAGE);
     expect(secondPage.cursor).not.toBeNull();
 
@@ -102,9 +144,9 @@ describe('transactionLedgerList pagination (integration)', () => {
     ).toBe(true);
 
     const thirdPage = await resolvers.Query.transactionLedgerList(
-      null,
+      null as never,
       { limit: ITEMS_PER_PAGE, cursor: assertNotNull(secondPage.cursor) },
-      context,
+      testContext,
     );
 
     expect(thirdPage.edges.length).toBe(2);
@@ -112,13 +154,13 @@ describe('transactionLedgerList pagination (integration)', () => {
   });
 
   it('handles empty results correctly', async () => {
-    const newUser = await createUser(testKnex);
-    const newContext = { ...context, user: newUser };
+    const user = await createUser(testKnex);
+    const testContext = context.login(user);
 
     const result = await resolvers.Query.transactionLedgerList(
-      null,
+      null as never,
       { limit: 10 },
-      newContext,
+      testContext,
     );
 
     expect(result.edges.length).toBe(0);

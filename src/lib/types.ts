@@ -3,7 +3,9 @@ import type { Knex } from 'knex';
 import type { NextApiRequest } from 'next';
 import type { IConfig } from './config';
 
-export interface IContextInner {
+export interface IContext {
+  req: NextApiRequest;
+
   config: IConfig;
 
   services: {
@@ -19,10 +21,6 @@ export interface IContextInner {
   dl: Map<symbol, Dataloader<unknown, unknown>>;
 
   cleanup: () => Promise<unknown[]>;
-}
-
-export interface IContext extends IContextInner {
-  req: NextApiRequest;
 }
 
 export type IGlobalCache = {
