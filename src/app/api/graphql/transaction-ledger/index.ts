@@ -123,7 +123,7 @@ export const resolvers = {
       const limit = args.limit ?? 50;
       const cursor = args.cursor;
 
-      let query = context.services
+      const query = context.services
         .knex<TransactionLedger>('transaction_ledger')
         .where({ user_id: context.user.id, type })
         .whereNull('archived_at')
@@ -131,21 +131,15 @@ export const resolvers = {
         .orderBy('id', 'desc')
         .limit(limit + 1);
 
-      if (cursor) {
+      if (cursor != null) {
         const cursorTransaction = await context.services
           .knex<TransactionLedger>('transaction_ledger')
           .where({ id: cursor })
           .first();
 
-        if (cursorTransaction) {
-          query = query.andWhere((qb) => {
-            qb.where('transacted_at', '<', cursorTransaction.transacted_at).orWhere(
-              (qb2) => {
-                qb2
-                  .where('transacted_at', '=', cursorTransaction.transacted_at)
-                  .andWhere('id', '<', cursorTransaction.id);
-              },
-            );
+        if (cursorTransaction != null) {
+          query.andWhere((qb) => {
+            qb.where('transacted_at', '<', cursorTransaction.transacted_at);
           });
         }
       }
@@ -166,7 +160,7 @@ export const resolvers = {
             ),
           ),
         ),
-        cursor: hasNextPage ? results[results.length - 1]?.id : null,
+        cursor: hasNextPage ? results.at(-1)?.id : null,
       };
     },
   },
