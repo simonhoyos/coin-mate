@@ -17,12 +17,15 @@ export class TransactionLedger {
   concept!: string;
   description?: string | undefined | null;
   currency!: string;
+  original_currency!: string;
   amount_cents!: number;
+  original_amount_cents!: number;
   transacted_at!: string;
   type!: string;
 
   user_id!: string;
   category_id!: string;
+  space_id!: string;
 
   archived_at?: Date | string | null;
 

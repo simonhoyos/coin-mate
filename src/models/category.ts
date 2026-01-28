@@ -17,6 +17,7 @@ export class Category {
   description?: string | undefined;
 
   user_id!: string;
+  space_id!: string;
 
   archived_at?: Date | string | null;
 
