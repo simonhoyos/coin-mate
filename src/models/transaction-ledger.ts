@@ -17,7 +17,9 @@ export class TransactionLedger {
   concept!: string;
   description?: string | undefined | null;
   currency!: string;
+  original_currency!: string;
   amount_cents!: number;
+  original_amount_cents!: number;
   transacted_at!: string;
   type!: string;
 
