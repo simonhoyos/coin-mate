@@ -146,11 +146,12 @@ export default function HistoryPage() {
           name?: string;
         };
       }[];
+      cursor?: string | null;
     };
   }>(
     gql`
-      query TransactionListQuery($type: TransactionLedgerType) {
-        transactionLedgerList(type: $type) {
+      query TransactionListQuery($type: TransactionLedgerType, $limit: Int, $cursor: String) {
+        transactionLedgerList(type: $type, limit: $limit, cursor: $cursor) {
           edges {
             id
 
@@ -167,24 +168,79 @@ export default function HistoryPage() {
               name
             }
           }
+          cursor
         }
       }
     `,
     {
       variables: {
         type: currentType,
+        limit: 30,
       },
     },
   );
 
-  const transactionListData = transactionListQuery.data?.transactionLedgerList?.edges ?? [];
+  const transactionListData =
+    transactionListQuery.data?.transactionLedgerList?.edges ?? [];
+
+  const observerTarget = React.useRef<HTMLDivElement>(null);
+
+  const handleLoadMore = React.useCallback(() => {
+    if (
+      transactionListQuery.loading ||
+      !transactionListQuery.data?.transactionLedgerList?.cursor
+    )
+      return;
+
+    transactionListQuery.fetchMore({
+      variables: {
+        cursor: transactionListQuery.data.transactionLedgerList.cursor,
+      },
+      updateQuery: (prev, { fetchMoreResult }) => {
+        if (!fetchMoreResult) return prev;
+        return {
+          transactionLedgerList: {
+            ...fetchMoreResult.transactionLedgerList,
+            edges: [
+              ...(prev.transactionLedgerList?.edges ?? []),
+              ...(fetchMoreResult.transactionLedgerList?.edges ?? []),
+            ],
+            cursor: fetchMoreResult.transactionLedgerList?.cursor ?? null,
+          },
+        };
+      },
+    });
+  }, [transactionListQuery]);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.at(0)?.isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [handleLoadMore]);
 
   const transactionListGroupedByDate = React.useMemo(() => {
     return groupBy(transactionListData, 'transacted_at');
   }, [transactionListData]);
 
   const transactionEditing = React.useMemo(() => {
-    return transactionListData.find((expense) => expense.id === editingTransactionId);
+    return transactionListData.find(
+      (expense) => expense.id === editingTransactionId,
+    );
   }, [editingTransactionId, transactionListData]);
 
   const categoryListQuery = useQuery<{
@@ -357,7 +413,10 @@ export default function HistoryPage() {
     transactionLedgerForm.reset();
     router.push(
       createQueryString({
-        omitKeys: [CREATE_TRANSACTION_QUERY_PARAM, EDIT_TRANSACTION_QUERY_PARAM],
+        omitKeys: [
+          CREATE_TRANSACTION_QUERY_PARAM,
+          EDIT_TRANSACTION_QUERY_PARAM,
+        ],
       }),
     );
   }
@@ -386,7 +445,10 @@ export default function HistoryPage() {
       transactionLedgerForm.reset();
       router.push(
         createQueryString({
-          omitKeys: [CREATE_TRANSACTION_QUERY_PARAM, EDIT_TRANSACTION_QUERY_PARAM],
+          omitKeys: [
+            CREATE_TRANSACTION_QUERY_PARAM,
+            EDIT_TRANSACTION_QUERY_PARAM,
+          ],
         }),
       );
     },
@@ -454,7 +516,8 @@ export default function HistoryPage() {
           </TabsList>
         </Tabs>
 
-        {transactionListQuery.loading === true ? (
+        {transactionListQuery.loading === true &&
+        transactionListData.length === 0 ? (
           <div className="flex flex-1 justify-center">
             <Spinner className="size-12 text-primary mt-10" />
           </div>
@@ -524,7 +587,8 @@ export default function HistoryPage() {
                             <Link
                               href={createQueryString({
                                 appendKeys: {
-                                  [EDIT_TRANSACTION_QUERY_PARAM]: transaction.id,
+                                  [EDIT_TRANSACTION_QUERY_PARAM]:
+                                    transaction.id,
                                 },
                                 omitKeys: [CREATE_TRANSACTION_QUERY_PARAM],
                               })}
@@ -537,7 +601,9 @@ export default function HistoryPage() {
                           <Button
                             type="button"
                             variant="ghost"
-                            onClick={() => setDeletingTransactionId(transaction.id)}
+                            onClick={() =>
+                              setDeletingTransactionId(transaction.id)
+                            }
                           >
                             <IconTrash className="text-destructive" />
                             <span className="sr-only">Delete transaction</span>
@@ -549,6 +615,14 @@ export default function HistoryPage() {
                 </section>
               ),
             )}
+            <div
+              ref={observerTarget}
+              className="h-10 w-full flex justify-center items-center"
+            >
+              {transactionListQuery.loading && (
+                <Spinner className="size-6 text-primary" />
+              )}
+            </div>
           </section>
         )}
       </div>
