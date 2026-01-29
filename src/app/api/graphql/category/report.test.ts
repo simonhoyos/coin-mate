@@ -1,3 +1,4 @@
+import { set } from 'date-fns';
 import { omitBy } from 'lodash';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestContext, type ITestContext } from '@/lib/testing/context.js';
@@ -44,7 +45,11 @@ describe('categoryReport (integration)', () => {
             category_id: category?.id,
             space_id: space?.id,
             amount_cents: 1000,
-            transacted_at: new Date(2026, 0, 15).toISOString(), // Jan 15, 2026
+            transacted_at: set(new Date(), {
+              year: 2026,
+              month: 0,
+              date: 15,
+            }).toISOString(), // Jan 15, 2026
             type: 'expense',
           },
           (v) => v == null,
@@ -58,7 +63,11 @@ describe('categoryReport (integration)', () => {
             category_id: category?.id,
             space_id: space?.id,
             amount_cents: 2000,
-            transacted_at: new Date(2026, 0, 20).toISOString(), // Jan 20, 2026
+            transacted_at: set(new Date(), {
+              year: 2026,
+              month: 0,
+              date: 20,
+            }).toISOString(), // Jan 20, 2026
             type: 'expense',
           },
           (v) => v == null,
@@ -74,7 +83,11 @@ describe('categoryReport (integration)', () => {
           category_id: category?.id,
           space_id: space?.id,
           amount_cents: 5000,
-          transacted_at: new Date(2026, 1, 15).toISOString(), // Feb 15, 2026
+          transacted_at: set(new Date(), {
+            year: 2026,
+            month: 1,
+            date: 15,
+          }).toISOString(), // Feb 15, 2026
           type: 'expense',
         },
         (v) => v == null,
