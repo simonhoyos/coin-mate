@@ -303,33 +303,68 @@ const getReportByCategoryId = createLoader<
       year?: number | undefined;
     }[];
   }) => {
-    const reports = (await args.context.services
-      .knex<Category>('category')
-      .select([
-        'category.id as categoryId',
-        args.context.services.knex.raw(
-          `count(transaction_ledger.id) as "totalCount"`,
-        ),
-        args.context.services.knex.raw(
-          `sum(transaction_ledger.amount_cents) as "totalAmountCents"`,
-        ),
-        args.context.services.knex.raw(
-          `avg(transaction_ledger.amount_cents) as "averageAmountCents"`,
-        ),
-      ])
-      .leftJoin(
-        'transaction_ledger',
-        'transaction_ledger.category_id',
-        'category.id',
-      )
-      .where('transaction_ledger.type', 'expense')
-      .modify((qb) => {
-        const firstKey = args.keys.at(0);
+    const groups = new Map<
+      string,
+      {
+        ids: string[];
+        month?: number | undefined;
+        year?: number | undefined;
+      }
+    >();
 
-        if (firstKey?.month != null && firstKey?.year != null) {
+    for (const key of args.keys) {
+      const groupKey =
+        key.month != null && key.year != null
+          ? `${key.year}-${key.month}`
+          : 'current';
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          ids: [],
+          month: key.month,
+          year: key.year,
+        });
+      }
+
+      groups.get(groupKey)?.ids.push(key.id);
+    }
+
+    type ReportRow = {
+      categoryId: string;
+      totalCount?: number;
+      totalAmountCents?: number;
+      averageAmountCents?: number;
+    };
+
+    const results = await Promise.all(
+      Array.from(groups.values()).map(async (group) => {
+        const query = args.context.services
+          .knex<Category>('category')
+          .select([
+            'category.id as categoryId',
+            args.context.services.knex.raw(
+              `count(transaction_ledger.id) as "totalCount"`,
+            ),
+            args.context.services.knex.raw(
+              `sum(transaction_ledger.amount_cents) as "totalAmountCents"`,
+            ),
+            args.context.services.knex.raw(
+              `avg(transaction_ledger.amount_cents) as "averageAmountCents"`,
+            ),
+          ])
+          .leftJoin(
+            'transaction_ledger',
+            'transaction_ledger.category_id',
+            'category.id',
+          )
+          .where('transaction_ledger.type', 'expense')
+          .whereIn('category.id', group.ids)
+          .groupBy('category.id');
+
+        if (group.month != null && group.year != null) {
           const startDate = set(new Date(), {
-            year: firstKey.year,
-            month: firstKey.month - 1,
+            year: group.year,
+            month: group.month - 1,
             date: 1,
             hours: 0,
             minutes: 0,
@@ -339,37 +374,53 @@ const getReportByCategoryId = createLoader<
 
           const endDate = addMonths(startDate, 1);
 
-          qb.where(
+          query.where(
             'transaction_ledger.transacted_at',
             '>=',
             startDate.toISOString(),
           );
-          qb.where(
+          query.where(
             'transaction_ledger.transacted_at',
             '<',
             endDate.toISOString(),
           );
         } else {
-          qb.where(
+          query.where(
             'transaction_ledger.transacted_at',
             '>=',
             args.context.services.knex.raw(`date_trunc('month', now())`),
           );
         }
-      })
-      .whereIn(
-        'category.id',
-        args.keys.map((k) => k.id),
-      )
-      .groupBy('category.id')) as unknown as {
-      categoryId: string;
-      totalCount?: number;
-      totalAmountCents?: number;
-      averageAmountCents?: number;
-    }[];
+
+        const groupReports = (await query) as unknown as ReportRow[];
+
+        return {
+          groupKey:
+            group.month != null && group.year != null
+              ? `${group.year}-${group.month}`
+              : 'current',
+          reports: groupReports,
+        };
+      }),
+    );
+
+    const lookup = new Map<string, Map<string, ReportRow>>();
+
+    for (const res of results) {
+      const catMap = new Map<string, ReportRow>();
+      for (const report of res.reports) {
+        catMap.set(report.categoryId, report);
+      }
+      lookup.set(res.groupKey, catMap);
+    }
 
     return args.keys.map((key) => {
-      const report = reports?.find((report) => report.categoryId === key.id);
+      const groupKey =
+        key.month != null && key.year != null
+          ? `${key.year}-${key.month}`
+          : 'current';
+
+      const report = lookup.get(groupKey)?.get(key.id);
 
       return report != null
         ? {
