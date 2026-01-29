@@ -2,7 +2,23 @@
 
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
-import { IconFolderCode } from '@tabler/icons-react';
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconFolderCode,
+} from '@tabler/icons-react';
+import {
+  addMonths,
+  format,
+  isAfter,
+  isSameMonth,
+  parse,
+  startOfMonth,
+  subMonths,
+} from 'date-fns';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import React from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Empty,
   EmptyDescription,
@@ -18,6 +34,63 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const monthParam = searchParams.get('month');
+  const now = startOfMonth(new Date());
+
+  const currentMonthDate = React.useMemo(() => {
+    if (monthParam != null) {
+      try {
+        const parsedDate = parse(monthParam, 'yyyy-MM', new Date());
+
+        if (!Number.isNaN(parsedDate.getTime())) {
+          return startOfMonth(parsedDate);
+        }
+      } catch (_e) {
+        return now;
+      }
+    }
+
+    return now;
+  }, [monthParam, now]);
+
+  React.useEffect(() => {
+    if (isAfter(currentMonthDate, now)) {
+      const params = new URLSearchParams(searchParams.toString());
+
+      params.delete('month');
+
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  }, [currentMonthDate, now, pathname, router, searchParams]);
+
+  const handlePreviousMonth = () => {
+    const prevMonth = subMonths(currentMonthDate, 1);
+
+    const params = new URLSearchParams(searchParams.toString());
+
+    params.set('month', format(prevMonth, 'yyyy-MM'));
+
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleNextMonth = () => {
+    const nextMonth = addMonths(currentMonthDate, 1);
+
+    if (isAfter(nextMonth, now)) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+
+    params.set('month', format(nextMonth, 'yyyy-MM'));
+
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const isNextDisabled = isSameMonth(currentMonthDate, now);
+
   const categoryListQuery = useQuery<{
     categoryList?: {
       edges?: {
@@ -36,14 +109,14 @@ export default function DashboardPage() {
     };
   }>(
     gql`
-      query CategoryListQueryFromDashboardPage {
+      query CategoryListQueryFromDashboardPage($month: Int, $year: Int) {
         categoryList {
           edges {
             id
 
             name
 
-            report {
+            report(month: $month, year: $year) {
               categoryId
 
               totalCount
@@ -54,13 +127,39 @@ export default function DashboardPage() {
         }
       }
     `,
+    {
+      variables: {
+        month: currentMonthDate.getMonth() + 1,
+        year: currentMonthDate.getFullYear(),
+      },
+    },
   );
 
   const categoryListData = categoryListQuery.data?.categoryList?.edges ?? [];
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+
+        <div className="flex items-center justify-center gap-4 py-2">
+          <Button variant="ghost" size="icon" onClick={handlePreviousMonth}>
+            <IconChevronLeft />
+          </Button>
+          <span className="text-lg font-semibold min-w-32 text-center">
+            {format(currentMonthDate, 'MMMM yyyy')}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleNextMonth}
+            disabled={isNextDisabled}
+          >
+            <IconChevronRight />
+          </Button>
+        </div>
+      </div>
+
       {categoryListQuery.loading === true ? (
         <div className="flex flex-1 justify-center">
           <Spinner className="size-12 text-primary mt-10" />
