@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import type { Knex } from 'knex';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import { createLoader } from '@/lib/dataloader';
+import { createToken } from '@/lib/token';
 import type { IContext } from '@/lib/types';
 import { Audit } from './audit';
 
@@ -53,13 +53,7 @@ export class User {
 
     const token =
       user != null
-        ? jwt.sign(
-            { sub: user.id, iat: Math.floor(Date.now() / 1000) },
-            args.context.config.JWT_SECRET,
-            {
-              expiresIn: '30d',
-            },
-          )
+        ? createToken(user.id, args.context)
         : null;
 
     return {
@@ -92,13 +86,7 @@ export class User {
 
     const token =
       user != null
-        ? jwt.sign(
-            { sub: user.id, iat: Math.floor(Date.now() / 1000) },
-            args.context.config.JWT_SECRET,
-            {
-              expiresIn: '30d',
-            },
-          )
+        ? createToken(user.id, args.context)
         : null;
 
     return {
