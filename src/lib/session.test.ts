@@ -38,9 +38,30 @@ describe('session', () => {
         httpOnly: true,
         path: '/',
         sameSite: 'strict',
+        secure: false, // process.env.NODE_ENV is 'test' in vitest, usually treated as non-production
       })
     );
 
     vi.useRealTimers();
+  });
+
+  it('should create a session with a custom expiration date', async () => {
+    const mockCookieStore = {
+      set: vi.fn(),
+    };
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as any);
+
+    const token = 'test-token';
+    const customExpiresAt = new Date(Date.now() + 1000);
+
+    await createSession(token, customExpiresAt);
+
+    expect(mockCookieStore.set).toHaveBeenCalledWith(
+      'session',
+      token,
+      expect.objectContaining({
+        expires: customExpiresAt,
+      })
+    );
   });
 });
