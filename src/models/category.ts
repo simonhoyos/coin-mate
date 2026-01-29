@@ -1,3 +1,4 @@
+import { addMonths, set } from 'date-fns';
 import { omitBy } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
@@ -266,10 +267,14 @@ const getCategoryById = createLoader(
       return category != null
         ? {
             ...category,
-            getReport: () =>
+            getReport: (reportArgs: { month?: number; year?: number }) =>
               getReportByCategoryId({
                 context: args.context,
-                id: category.id,
+                id: {
+                  id: category.id,
+                  month: reportArgs?.month,
+                  year: reportArgs?.year,
+                },
               }),
           }
         : null;
@@ -277,8 +282,24 @@ const getCategoryById = createLoader(
   },
 );
 
-const getReportByCategoryId = createLoader(
-  async (args: { context: IContext; keys: readonly string[] }) => {
+const getReportByCategoryId = createLoader<
+  {
+    categoryId: string;
+    totalCount?: number;
+    totalAmountCents?: number;
+    averageAmountCents?: number;
+  } | null,
+  { id: string; month?: number | undefined; year?: number | undefined },
+  string
+>(
+  async (args: {
+    context: IContext;
+    keys: readonly {
+      id: string;
+      month?: number | undefined;
+      year?: number | undefined;
+    }[];
+  }) => {
     const reports = (await args.context.services
       .knex<Category>('category')
       .select([
@@ -299,12 +320,44 @@ const getReportByCategoryId = createLoader(
         'category.id',
       )
       .where('transaction_ledger.type', 'expense')
-      .where(
-        'transaction_ledger.transacted_at',
-        '>=',
-        args.context.services.knex.raw(`date_trunc('month', now())`),
+      .modify((qb) => {
+        const firstKey = args.keys.at(0);
+
+        if (firstKey?.month != null && firstKey?.year != null) {
+          const startDate = set(new Date(), {
+            year: firstKey.year,
+            month: firstKey.month - 1,
+            date: 1,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+            milliseconds: 0,
+          });
+
+          const endDate = addMonths(startDate, 1);
+
+          qb.where(
+            'transaction_ledger.transacted_at',
+            '>=',
+            startDate.toISOString(),
+          );
+          qb.where(
+            'transaction_ledger.transacted_at',
+            '<',
+            endDate.toISOString(),
+          );
+        } else {
+          qb.where(
+            'transaction_ledger.transacted_at',
+            '>=',
+            args.context.services.knex.raw(`date_trunc('month', now())`),
+          );
+        }
+      })
+      .whereIn(
+        'category.id',
+        args.keys.map((k) => k.id),
       )
-      .whereIn('category.id', args.keys)
       .groupBy('category.id')) as unknown as {
       categoryId: string;
       totalCount?: number;
@@ -312,8 +365,20 @@ const getReportByCategoryId = createLoader(
       averageAmountCents?: number;
     }[];
 
-    return args.keys.map(
-      (key) => reports?.find((report) => report.categoryId === key) || null,
-    );
+    return args.keys.map((key) => {
+      const report = reports?.find((report) => report.categoryId === key.id);
+
+      return report != null
+        ? {
+            ...report,
+            totalCount: Number(report.totalCount),
+            totalAmountCents: Number(report.totalAmountCents),
+            averageAmountCents: Number(report.averageAmountCents),
+          }
+        : null;
+    });
+  },
+  {
+    cacheKeyFn: (key) => JSON.stringify(key),
   },
 );
