@@ -1,7 +1,7 @@
 'use client';
 
 import { gql } from '@apollo/client';
-import { useMutation, useQuery } from '@apollo/client/react';
+import { useApolloClient, useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCheck, IconEye, IconEyeOff } from '@tabler/icons-react';
 import Link from 'next/link';
@@ -49,6 +49,7 @@ const SignUpFormSchema = z
 
 export default function SignUpPage() {
   const router = useRouter();
+  const client = useApolloClient();
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
@@ -129,6 +130,8 @@ export default function SignUpPage() {
     });
 
     if (userSignUpData?.userSignUp.token != null) {
+      await client.resetStore();
+
       router.push('/dashboard/history');
     }
   }
