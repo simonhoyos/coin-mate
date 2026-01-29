@@ -9,7 +9,7 @@ export const typeDefs = `#graphql
     name: String
     description: String
 
-    report: CategoryReport
+    report(month: Int, year: Int): CategoryReport
   }
 
   type CategoryConnection {
