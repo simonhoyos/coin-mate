@@ -14,6 +14,7 @@ export interface IContext {
 
   user: {
     id: string;
+    shouldRefreshSession?: boolean;
   } | null;
 
   metadata?: Record<string, unknown>;
