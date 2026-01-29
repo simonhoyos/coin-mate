@@ -26,3 +26,9 @@ export async function getSession() {
 export async function clearSession() {
   return (await cookies()).delete(SESSION_COOKIE_NAME);
 }
+
+export function shouldRefreshSession(issuedAtSeconds: number): boolean {
+  const issuedAtMs = issuedAtSeconds * 1000;
+  const now = Date.now();
+  return now - issuedAtMs > REFRESH_THRESHOLD_MS;
+}

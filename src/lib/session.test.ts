@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createSession, SESSION_DURATION_MS, REFRESH_THRESHOLD_MS } from './session';
+import { createSession, SESSION_DURATION_MS, REFRESH_THRESHOLD_MS, shouldRefreshSession } from './session';
 import { cookies } from 'next/headers';
 
 vi.mock('next/headers', () => ({
@@ -63,5 +63,27 @@ describe('session', () => {
         expires: customExpiresAt,
       })
     );
+  });
+
+  describe('shouldRefreshSession', () => {
+    it('should return true if session is older than threshold', () => {
+      const now = Date.now();
+      vi.setSystemTime(now);
+      
+      const issuedAtSeconds = Math.floor((now - REFRESH_THRESHOLD_MS - 1000) / 1000);
+      expect(shouldRefreshSession(issuedAtSeconds)).toBe(true);
+      
+      vi.useRealTimers();
+    });
+
+    it('should return false if session is newer than threshold', () => {
+      const now = Date.now();
+      vi.setSystemTime(now);
+      
+      const issuedAtSeconds = Math.floor((now - REFRESH_THRESHOLD_MS + 1000) / 1000);
+      expect(shouldRefreshSession(issuedAtSeconds)).toBe(false);
+      
+      vi.useRealTimers();
+    });
   });
 });
