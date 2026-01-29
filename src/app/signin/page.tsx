@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IconEye, IconEyeOff } from '@tabler/icons-react';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -34,6 +34,7 @@ const SignInFormSchema = z.object({
 });
 
 export default function SignInPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = React.useState(false);
 
   const meQuery = useQuery<{
@@ -111,7 +112,7 @@ export default function SignInPage() {
     });
 
     if (userSignInData?.userSignIn.token != null) {
-      redirect('/dashboard/history');
+      router.push('/dashboard/history');
     }
   }
 
