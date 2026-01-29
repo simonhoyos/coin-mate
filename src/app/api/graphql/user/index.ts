@@ -54,6 +54,8 @@ export const resolvers = {
       const userId = context.user?.id;
 
       if (userId == null) {
+        await clearSession();
+
         throw new GraphQLError('Unauthorized', {
           extensions: { code: 'FORBIDDEN' },
         });
