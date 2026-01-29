@@ -267,7 +267,10 @@ const getCategoryById = createLoader(
       return category != null
         ? {
             ...category,
-            getReport: (reportArgs: { month?: number; year?: number }) =>
+            getReport: (reportArgs: {
+              month?: number | undefined;
+              year?: number | undefined;
+            }) =>
               getReportByCategoryId({
                 context: args.context,
                 id: {

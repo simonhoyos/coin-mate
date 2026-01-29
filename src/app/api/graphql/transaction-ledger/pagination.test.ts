@@ -1,4 +1,4 @@
-import knex from 'knex';
+import { set, subSeconds } from 'date-fns';
 import { omitBy } from 'lodash';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { assertNotNull } from '@/lib/assert.js';
@@ -7,10 +7,7 @@ import { createCategory } from '@/lib/testing/factories/category';
 import { createSpace } from '@/lib/testing/factories/space';
 import { createTransactionLedger } from '@/lib/testing/factories/transaction-ledger';
 import { createUser } from '@/lib/testing/factories/user';
-import knexConfig from '../../../../../knexfile.js';
 import { resolvers } from './index';
-
-const testKnex = knex(knexConfig);
 
 describe('transactionLedgerList pagination (integration)', () => {
   const destroyers: (() => Promise<unknown>)[] = [];
@@ -24,11 +21,11 @@ describe('transactionLedgerList pagination (integration)', () => {
   afterAll(async () => Promise.all(destroyers.map((destroy) => destroy())));
 
   it('returns the requested limit of transactions', async () => {
-    const user = await createUser(testKnex);
+    const user = await createUser(context.services.knex);
     const testContext = context.login(user);
 
     const space = await createSpace(
-      testKnex,
+      context.services.knex,
       omitBy(
         {
           user_id: user?.id,
@@ -38,7 +35,7 @@ describe('transactionLedgerList pagination (integration)', () => {
     );
 
     const category = await createCategory(
-      testKnex,
+      context.services.knex,
       omitBy(
         {
           user_id: user?.id,
@@ -48,16 +45,26 @@ describe('transactionLedgerList pagination (integration)', () => {
       ),
     );
 
+    const baseDate = set(new Date(), {
+      year: 2026,
+      month: 0,
+      date: 11,
+      hours: 12,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    });
+
     await Promise.all(
       [...Array(12)].map((_, i) =>
         createTransactionLedger(
-          testKnex,
+          context.services.knex,
           omitBy(
             {
               user_id: user?.id,
               category_id: category?.id,
               space_id: space?.id,
-              transacted_at: new Date(2026, 0, 11, 12, 0, 0 - i).toISOString(),
+              transacted_at: subSeconds(baseDate, i).toISOString(),
             },
             (value) => value == null,
           ),
@@ -77,11 +84,11 @@ describe('transactionLedgerList pagination (integration)', () => {
 
   it('paginates correctly using cursor', async () => {
     const ITEMS_PER_PAGE = 4;
-    const user = await createUser(testKnex);
+    const user = await createUser(context.services.knex);
     const testContext = context.login(user);
 
     const space = await createSpace(
-      testKnex,
+      context.services.knex,
       omitBy(
         {
           user_id: user?.id,
@@ -91,7 +98,7 @@ describe('transactionLedgerList pagination (integration)', () => {
     );
 
     const category = await createCategory(
-      testKnex,
+      context.services.knex,
       omitBy(
         {
           user_id: user?.id,
@@ -101,16 +108,26 @@ describe('transactionLedgerList pagination (integration)', () => {
       ),
     );
 
+    const baseDate = set(new Date(), {
+      year: 2026,
+      month: 0,
+      date: 11,
+      hours: 12,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    });
+
     await Promise.all(
       [...Array(10)].map((_, i) =>
         createTransactionLedger(
-          testKnex,
+          context.services.knex,
           omitBy(
             {
               user_id: user?.id,
               category_id: category?.id,
               space_id: space?.id,
-              transacted_at: new Date(2026, 0, 11, 12, 0, 0 - i).toISOString(),
+              transacted_at: subSeconds(baseDate, i).toISOString(),
             },
             (value) => value == null,
           ),
@@ -154,7 +171,7 @@ describe('transactionLedgerList pagination (integration)', () => {
   });
 
   it('handles empty results correctly', async () => {
-    const user = await createUser(testKnex);
+    const user = await createUser(context.services.knex);
     const testContext = context.login(user);
 
     const result = await resolvers.Query.transactionLedgerList(
