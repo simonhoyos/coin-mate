@@ -1,6 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createSession, SESSION_DURATION_MS, REFRESH_THRESHOLD_MS, shouldRefreshSession } from './session';
 import { cookies } from 'next/headers';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createSession,
+  REFRESH_THRESHOLD_MS,
+  SESSION_DURATION_MS,
+  shouldRefreshSession,
+} from './session';
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(),
@@ -39,7 +44,7 @@ describe('session', () => {
         path: '/',
         sameSite: 'strict',
         secure: false, // process.env.NODE_ENV is 'test' in vitest, usually treated as non-production
-      })
+      }),
     );
 
     vi.useRealTimers();
@@ -61,7 +66,7 @@ describe('session', () => {
       token,
       expect.objectContaining({
         expires: customExpiresAt,
-      })
+      }),
     );
   });
 
@@ -69,20 +74,24 @@ describe('session', () => {
     it('should return true if session is older than threshold', () => {
       const now = Date.now();
       vi.setSystemTime(now);
-      
-      const issuedAtSeconds = Math.floor((now - REFRESH_THRESHOLD_MS - 1000) / 1000);
+
+      const issuedAtSeconds = Math.floor(
+        (now - REFRESH_THRESHOLD_MS - 1000) / 1000,
+      );
       expect(shouldRefreshSession(issuedAtSeconds)).toBe(true);
-      
+
       vi.useRealTimers();
     });
 
     it('should return false if session is newer than threshold', () => {
       const now = Date.now();
       vi.setSystemTime(now);
-      
-      const issuedAtSeconds = Math.floor((now - REFRESH_THRESHOLD_MS + 1000) / 1000);
+
+      const issuedAtSeconds = Math.floor(
+        (now - REFRESH_THRESHOLD_MS + 1000) / 1000,
+      );
       expect(shouldRefreshSession(issuedAtSeconds)).toBe(false);
-      
+
       vi.useRealTimers();
     });
   });

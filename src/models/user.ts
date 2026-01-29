@@ -51,10 +51,7 @@ export class User {
       },
     });
 
-    const token =
-      user != null
-        ? createToken(user.id, args.context)
-        : null;
+    const token = user != null ? createToken(user.id, args.context) : null;
 
     return {
       user,
@@ -84,10 +81,7 @@ export class User {
       throw new Error('Invalid email or password');
     }
 
-    const token =
-      user != null
-        ? createToken(user.id, args.context)
-        : null;
+    const token = user != null ? createToken(user.id, args.context) : null;
 
     return {
       user,

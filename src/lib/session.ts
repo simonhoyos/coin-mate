@@ -7,7 +7,8 @@ export const REFRESH_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
 const SESSION_COOKIE_NAME = 'session';
 
 export async function createSession(token: string, expiresAt?: Date) {
-  const sessionExpiresAt = expiresAt ?? new Date(Date.now() + SESSION_DURATION_MS);
+  const sessionExpiresAt =
+    expiresAt ?? new Date(Date.now() + SESSION_DURATION_MS);
   const cookieStore = await cookies();
 
   return cookieStore.set(SESSION_COOKIE_NAME, token, {
