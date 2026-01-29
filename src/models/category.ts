@@ -1,3 +1,4 @@
+import { addMonths, set } from 'date-fns';
 import { omitBy } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
@@ -266,10 +267,17 @@ const getCategoryById = createLoader(
       return category != null
         ? {
             ...category,
-            getReport: () =>
+            getReport: (reportArgs: {
+              month?: number | undefined;
+              year?: number | undefined;
+            }) =>
               getReportByCategoryId({
                 context: args.context,
-                id: category.id,
+                id: {
+                  id: category.id,
+                  month: reportArgs?.month,
+                  year: reportArgs?.year,
+                },
               }),
           }
         : null;
@@ -277,43 +285,154 @@ const getCategoryById = createLoader(
   },
 );
 
-const getReportByCategoryId = createLoader(
-  async (args: { context: IContext; keys: readonly string[] }) => {
-    const reports = (await args.context.services
-      .knex<Category>('category')
-      .select([
-        'category.id as categoryId',
-        args.context.services.knex.raw(
-          `count(transaction_ledger.id) as "totalCount"`,
-        ),
-        args.context.services.knex.raw(
-          `sum(transaction_ledger.amount_cents) as "totalAmountCents"`,
-        ),
-        args.context.services.knex.raw(
-          `avg(transaction_ledger.amount_cents) as "averageAmountCents"`,
-        ),
-      ])
-      .leftJoin(
-        'transaction_ledger',
-        'transaction_ledger.category_id',
-        'category.id',
-      )
-      .where('transaction_ledger.type', 'expense')
-      .where(
-        'transaction_ledger.transacted_at',
-        '>=',
-        args.context.services.knex.raw(`date_trunc('month', now())`),
-      )
-      .whereIn('category.id', args.keys)
-      .groupBy('category.id')) as unknown as {
+const getReportByCategoryId = createLoader<
+  {
+    categoryId: string;
+    totalCount?: number;
+    totalAmountCents?: number;
+    averageAmountCents?: number;
+  } | null,
+  { id: string; month?: number | undefined; year?: number | undefined },
+  string
+>(
+  async (args: {
+    context: IContext;
+    keys: readonly {
+      id: string;
+      month?: number | undefined;
+      year?: number | undefined;
+    }[];
+  }) => {
+    const groups = new Map<
+      string,
+      {
+        ids: string[];
+        month?: number | undefined;
+        year?: number | undefined;
+      }
+    >();
+
+    for (const key of args.keys) {
+      const groupKey =
+        key.month != null && key.year != null
+          ? `${key.year}-${key.month}`
+          : 'current';
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          ids: [],
+          month: key.month,
+          year: key.year,
+        });
+      }
+
+      groups.get(groupKey)?.ids.push(key.id);
+    }
+
+    type ReportRow = {
       categoryId: string;
       totalCount?: number;
       totalAmountCents?: number;
       averageAmountCents?: number;
-    }[];
+    };
 
-    return args.keys.map(
-      (key) => reports?.find((report) => report.categoryId === key) || null,
+    const results = await Promise.all(
+      Array.from(groups.values()).map(async (group) => {
+        const query = args.context.services
+          .knex<Category>('category')
+          .select([
+            'category.id as categoryId',
+            args.context.services.knex.raw(
+              `count(transaction_ledger.id) as "totalCount"`,
+            ),
+            args.context.services.knex.raw(
+              `sum(transaction_ledger.amount_cents) as "totalAmountCents"`,
+            ),
+            args.context.services.knex.raw(
+              `avg(transaction_ledger.amount_cents) as "averageAmountCents"`,
+            ),
+          ])
+          .leftJoin(
+            'transaction_ledger',
+            'transaction_ledger.category_id',
+            'category.id',
+          )
+          .where('transaction_ledger.type', 'expense')
+          .whereIn('category.id', group.ids)
+          .groupBy('category.id');
+
+        if (group.month != null && group.year != null) {
+          const startDate = set(new Date(), {
+            year: group.year,
+            month: group.month - 1,
+            date: 1,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+            milliseconds: 0,
+          });
+
+          const endDate = addMonths(startDate, 1);
+
+          query.where(
+            'transaction_ledger.transacted_at',
+            '>=',
+            startDate.toISOString(),
+          );
+          query.where(
+            'transaction_ledger.transacted_at',
+            '<',
+            endDate.toISOString(),
+          );
+        } else {
+          query.where(
+            'transaction_ledger.transacted_at',
+            '>=',
+            args.context.services.knex.raw(`date_trunc('month', now())`),
+          );
+        }
+
+        const groupReports = (await query) as unknown as ReportRow[];
+
+        return {
+          groupKey:
+            group.month != null && group.year != null
+              ? `${group.year}-${group.month}`
+              : 'current',
+          reports: groupReports,
+        };
+      }),
     );
+
+    const lookup = new Map<string, Map<string, ReportRow>>();
+
+    for (const res of results) {
+      const catMap = new Map<string, ReportRow>();
+      for (const report of res.reports) {
+        catMap.set(report.categoryId, report);
+      }
+      lookup.set(res.groupKey, catMap);
+    }
+
+    return args.keys.map((key) => {
+      const groupKey =
+        key.month != null && key.year != null
+          ? `${key.year}-${key.month}`
+          : 'current';
+
+      const report = lookup.get(groupKey)?.get(key.id);
+
+      return report != null
+        ? {
+            ...report,
+            totalCount: Number(report.totalCount),
+            totalAmountCents: Number(report.totalAmountCents),
+            averageAmountCents: Number(report.averageAmountCents),
+          }
+        : null;
+    });
+  },
+  {
+    cacheKeyFn: (key) => JSON.stringify(key),
   },
 );

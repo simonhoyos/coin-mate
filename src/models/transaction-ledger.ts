@@ -1,4 +1,4 @@
-import { addHours, format } from 'date-fns';
+import { addHours, format, parseISO } from 'date-fns';
 import { omitBy } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
@@ -308,7 +308,7 @@ const TransactionLedgerCreateSchema = z.object({
   transacted_at: z
     .string()
     .transform((value) =>
-      addHours(format(new Date(value), 'yyyy-MM-dd'), 12).toISOString(),
+      addHours(format(parseISO(value), 'yyyy-MM-dd'), 12).toISOString(),
     )
     .pipe(z.iso.datetime()),
   type: TypeEnum,

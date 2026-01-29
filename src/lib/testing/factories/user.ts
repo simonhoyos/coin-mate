@@ -13,7 +13,7 @@ export async function createUser(
   );
 
   const payload = {
-    email: `user-${Date.now()}@example.com`,
+    email: `user-${crypto.randomUUID()}@example.com`,
     ...overrides,
     password: hash,
   };

@@ -9,7 +9,7 @@ export const typeDefs = `#graphql
     name: String
     description: String
 
-    report: CategoryReport
+    report(month: Int, year: Int): CategoryReport
   }
 
   type CategoryConnection {
@@ -63,9 +63,16 @@ export const resolvers = {
         (category) => category?.description,
       ),
 
-    report: async (parent: { id: string }, _args: never, context: IContext) =>
+    report: async (
+      parent: { id: string },
+      args: { month?: number | undefined; year?: number | undefined },
+      context: IContext,
+    ) =>
       Category.gen({ context, id: parent.id }).then((category) =>
-        category?.getReport(),
+        category?.getReport({
+          month: args.month,
+          year: args.year,
+        }),
       ),
   },
 
