@@ -38,12 +38,12 @@ export async function createContextInner() {
 export async function createContext(req: NextApiRequest): Promise<
   {
     req: NextApiRequest;
-    user: { id: string } | null;
+    user: { id: string; shouldRefreshSession: boolean } | null;
   } & Awaited<ReturnType<typeof createContextInner>>
 > {
   const innerContext = await createContextInner();
 
-  const { getSession } = await import('./session');
+  const { getSession, shouldRefreshSession } = await import('./session');
   const session = await getSession();
 
   const sessionPayload =
@@ -55,6 +55,10 @@ export async function createContext(req: NextApiRequest): Promise<
     typeof sessionPayload?.sub === 'string'
       ? {
           id: sessionPayload.sub,
+          shouldRefreshSession:
+            typeof sessionPayload !== 'string' && sessionPayload.iat != null
+              ? shouldRefreshSession(sessionPayload.iat)
+              : false,
         }
       : null;
 

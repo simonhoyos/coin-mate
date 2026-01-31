@@ -1,18 +1,22 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 
-const MS_IN_MONTH = 30 * 7 * 24 * 60 * 60 * 1000;
+const MS_IN_A_DAY = 24 * 60 * 60 * 1000;
+
+export const SESSION_DURATION_MS = 7 * MS_IN_A_DAY;
+export const REFRESH_THRESHOLD_MS = 1 * MS_IN_A_DAY;
 
 const SESSION_COOKIE_NAME = 'session';
 
-export async function createSession(token: string) {
-  const expiresAt = new Date(Date.now() + MS_IN_MONTH);
+export async function createSession(token: string, expiresAt?: Date) {
+  const sessionExpiresAt =
+    expiresAt ?? new Date(Date.now() + SESSION_DURATION_MS);
   const cookieStore = await cookies();
 
   return cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: false,
-    expires: expiresAt,
+    secure: process.env.NODE_ENV === 'production',
+    expires: sessionExpiresAt,
     sameSite: 'strict',
     path: '/',
   });
@@ -24,4 +28,10 @@ export async function getSession() {
 
 export async function clearSession() {
   return (await cookies()).delete(SESSION_COOKIE_NAME);
+}
+
+export function shouldRefreshSession(issuedAtSeconds: number): boolean {
+  const issuedAtMs = issuedAtSeconds * 1000;
+  const now = Date.now();
+  return now - issuedAtMs > REFRESH_THRESHOLD_MS;
 }

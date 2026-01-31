@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { assertNotNull } from '@/lib/assert';
 import { clearSession, createSession } from '@/lib/session';
+import { createToken } from '@/lib/token';
 import type { IContext } from '@/lib/types';
 import { Space, SpaceUser } from '@/models/space';
 import { User } from '@/models/user';
@@ -59,6 +60,11 @@ export const resolvers = {
         throw new GraphQLError('Unauthorized', {
           extensions: { code: 'FORBIDDEN' },
         });
+      }
+
+      if (context.user?.shouldRefreshSession === true) {
+        const token = createToken(userId, context);
+        await createSession(token);
       }
 
       return User.gen({ context, id: userId }).then((user) =>
