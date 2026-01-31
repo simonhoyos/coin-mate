@@ -1,3 +1,4 @@
+import type { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 import { cookies } from 'next/headers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -27,7 +28,10 @@ describe('session', () => {
     const mockCookieStore = {
       set: vi.fn(),
     };
-    vi.mocked(cookies).mockResolvedValue(mockCookieStore as any);
+
+    vi.mocked(cookies).mockResolvedValue(
+      mockCookieStore as unknown as ReadonlyRequestCookies,
+    );
 
     const token = 'test-token';
     const now = Date.now();
@@ -54,7 +58,9 @@ describe('session', () => {
     const mockCookieStore = {
       set: vi.fn(),
     };
-    vi.mocked(cookies).mockResolvedValue(mockCookieStore as any);
+    vi.mocked(cookies).mockResolvedValue(
+      mockCookieStore as unknown as ReadonlyRequestCookies,
+    );
 
     const token = 'test-token';
     const customExpiresAt = new Date(Date.now() + 1000);

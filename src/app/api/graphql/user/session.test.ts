@@ -1,6 +1,7 @@
 import knex from 'knex';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSession } from '@/lib/session';
+import { assertNotNull } from '@/lib/assert.js';
+import { clearSession, createSession } from '@/lib/session';
 import { createTestContext } from '@/lib/testing/context';
 import { createUser } from '@/lib/testing/factories/user';
 import knexConfig from '../../../../../knexfile.js';
@@ -11,8 +12,9 @@ const testKnex = knex(knexConfig);
 vi.mock('@/lib/session', async () => {
   const actual = await vi.importActual('@/lib/session');
   return {
-    ...(actual as any),
+    ...actual,
     createSession: vi.fn(),
+    clearSession: vi.fn(),
   };
 });
 
@@ -29,12 +31,12 @@ describe('User session sliding window (integration)', () => {
     const testContext = {
       ...context.login(user),
       user: {
-        id: user!.id,
+        id: assertNotNull(user).id,
         shouldRefreshSession: true,
       },
     };
 
-    await resolvers.Query.me(null as never, {} as never, testContext as any);
+    await resolvers.Query.me(null as never, {} as never, testContext);
 
     expect(createSession).toHaveBeenCalled();
   });
@@ -47,12 +49,12 @@ describe('User session sliding window (integration)', () => {
     const testContext = {
       ...context.login(user),
       user: {
-        id: user!.id,
+        id: assertNotNull(user).id,
         shouldRefreshSession: false,
       },
     };
 
-    await resolvers.Query.me(null as never, {} as never, testContext as any);
+    await resolvers.Query.me(null as never, {} as never, testContext);
 
     expect(createSession).not.toHaveBeenCalled();
   });
@@ -66,9 +68,10 @@ describe('User session sliding window (integration)', () => {
     };
 
     await expect(
-      resolvers.Query.me(null as never, {} as never, testContext as any),
+      resolvers.Query.me(null as never, {} as never, testContext),
     ).rejects.toThrow('Unauthorized');
 
     expect(createSession).not.toHaveBeenCalled();
+    expect(clearSession).toHaveBeenCalled();
   });
 });
