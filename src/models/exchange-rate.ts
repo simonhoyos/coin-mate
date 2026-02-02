@@ -18,7 +18,7 @@ export class ExchangeRate {
       currencyCode: string;
       rateCents: number;
       provider: string;
-      data: Record<string, unknown> | null;
+      data?: Record<string, unknown> | null;
     };
   }) {
     const trxResult = await args.context.services.knex.transaction(
@@ -29,22 +29,24 @@ export class ExchangeRate {
               currency_code: args.data.currencyCode,
               rate_cents: args.data.rateCents,
               provider: args.data.provider,
-              data: args.data.data,
+              data: args.data.data ?? null,
             },
             '*',
           )
           .returning('*');
 
         return {
-          exchangeRate,
+          exchangeRate: exchangeRate
+            ? {
+                ...exchangeRate,
+                rate_cents: Number(exchangeRate.rate_cents),
+              }
+            : null,
         };
       },
     );
 
-    return assertNotNull(
-      trxResult.exchangeRate,
-      'Could not log exchange rate',
-    );
+    return assertNotNull(trxResult.exchangeRate, 'Could not log exchange rate');
   }
 
   static async getLatestRate(args: {
@@ -59,6 +61,11 @@ export class ExchangeRate {
       .orderBy('created_at', 'desc')
       .first();
 
-    return rate || null;
+    return rate
+      ? {
+          ...rate,
+          rate_cents: Number(rate.rate_cents),
+        }
+      : null;
   }
 }
