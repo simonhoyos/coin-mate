@@ -2,6 +2,7 @@ import { addHours, format, parseISO } from 'date-fns';
 import { omitBy } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
+import { fetchExchangeRate } from '@/lib/currency';
 import { createLoader } from '@/lib/dataloader';
 import type { IContext } from '@/lib/types';
 import { Audit } from './audit';
@@ -69,6 +70,14 @@ export class TransactionLedger {
       }
     });
 
+    const amountCents =
+      parsedData.currency !== 'COP'
+        ? Math.round(
+            parsedData.amount_cents *
+              (await fetchExchangeRate(args.context, 'USDCOP')),
+          )
+        : parsedData.amount_cents;
+
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
         const space = await trx<Space>('space')
@@ -88,10 +97,10 @@ export class TransactionLedger {
                 : null,
 
             original_currency: parsedData.currency,
-            currency: parsedData.currency,
+            currency: 'COP',
 
             original_amount_cents: parsedData.amount_cents,
-            amount_cents: parsedData.amount_cents,
+            amount_cents: amountCents,
 
             transacted_at: parsedData.transacted_at,
             type: parsedData.type,

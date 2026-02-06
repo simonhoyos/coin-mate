@@ -15,7 +15,7 @@ describe('ExchangeRate', () => {
   afterAll(async () => Promise.all(destroyers.map((destroy) => destroy())));
 
   it('should log and retrieve the latest exchange rate', async () => {
-    const currencyCode = 'USDCOP';
+    const currencyCode = `USDCOP-${crypto.randomUUID()}`;
     const rateCents = 410000;
     const provider = 'test_provider';
     const data = { meta: 'test_data' };
