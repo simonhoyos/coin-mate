@@ -21,7 +21,7 @@ describe('session', () => {
 
   it('should have correct constants', () => {
     expect(SESSION_DURATION_MS).toBe(7 * 24 * 60 * 60 * 1000);
-    expect(REFRESH_THRESHOLD_MS).toBe(60 * 60 * 1000);
+    expect(REFRESH_THRESHOLD_MS).toBe(1 * 24 * 60 * 60 * 1000);
   });
 
   it('should create a session with 7 days expiration', async () => {
