@@ -50,6 +50,33 @@ describe('graphql/category', () => {
         }),
       );
 
+      const targetMonth = 1;
+      const targetYear = 2026;
+
+      const transactionCreationData = [
+        {
+          user_id: user?.id,
+          category_id: category?.id,
+          space_id: space?.id,
+          amount_cents: 1000,
+          transacted_at: set(new Date(), {
+            year: 2026,
+            month: 0,
+            date: 15,
+          }).toISOString(),
+          type: 'expense',
+        },
+      ];
+
+      await Promise.all(
+        transactionCreationData.map((data) =>
+          createTransactionLedger(
+            context.services.knex,
+            omitBy(data, (v) => v == null),
+          ),
+        ),
+      );
+
       const categoriesQueryData = await resolvers.Query.categoryList(
         null as never,
         null as never,
@@ -73,6 +100,14 @@ describe('graphql/category', () => {
       );
 
       expect(description).toBe(category.description);
+
+      const report = await resolvers.Category.report(
+        { id: category.id },
+        { year: targetYear, month: targetMonth },
+        contextWithUser,
+      );
+
+      expect(report == null).toBeFalsy();
     });
 
     it('user logged in can not see non-owned categories properties', async () => {
@@ -117,6 +152,14 @@ describe('graphql/category', () => {
       );
 
       expect(description).toBeUndefined();
+
+      const report = await resolvers.Category.report(
+        { id: category.id },
+        { month: 0, year: 2026 },
+        contextWithUser,
+      );
+
+      expect(report == null).toBeTruthy();
     });
 
     it('user not logged in cannot see any categories properties', async () => {
@@ -136,12 +179,8 @@ describe('graphql/category', () => {
       );
 
       expect(
-        resolvers.Query.categoryList(
-          null as never,
-          null as never,
-          context,
-        )
-      ).rejects.toThrow('Unauthorized')
+        resolvers.Query.categoryList(null as never, null as never, context),
+      ).rejects.toThrow('Unauthorized');
 
       const name = await resolvers.Category.name(
         { id: category.id },
@@ -158,6 +197,14 @@ describe('graphql/category', () => {
       );
 
       expect(description).toBeUndefined();
+
+      const report = await resolvers.Category.report(
+        { id: category.id },
+        { month: 0, year: 2026 },
+        context,
+      );
+
+      expect(report == null).toBeTruthy();
     });
   });
 
