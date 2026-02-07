@@ -170,7 +170,7 @@ describe('graphql/category', () => {
     it('user not logged in cannot see any categories properties', async () => {
       const { category, targetYear, targetMonth } = await setup(context);
 
-      expect(
+      await expect(
         resolvers.Query.categoryList(null as never, null as never, context),
       ).rejects.toThrow('Unauthorized');
 
@@ -197,6 +197,90 @@ describe('graphql/category', () => {
       );
 
       expect(report == null).toBeTruthy();
+    });
+
+    it('user logged in can create, update, and delete owned categories', async () => {
+      const { contextWithUser, category } = await setup(context);
+
+      const newCategory = await resolvers.Mutation.categoryCreate(
+        null as never,
+        { input: { name: 'new category', description: 'new description' } },
+        contextWithUser,
+      );
+
+      expect(newCategory.id != null).toBeTruthy();
+
+      const updatedCategory = await resolvers.Mutation.categoryUpdate(
+        null as never,
+        {
+          input: {
+            id: category.id,
+            name: 'updated category',
+          },
+        },
+        contextWithUser,
+      );
+
+      expect(updatedCategory.id).toBe(category.id);
+
+      const deletedCategory = await resolvers.Mutation.categoryDelete(
+        null as never,
+        { input: { id: category.id } },
+        contextWithUser,
+      );
+
+      expect(deletedCategory.id).toBe(category.id);
+    });
+
+    it('user logged cannot update, or delete non-owned categories', async () => {
+      const { category } = await setup(context);
+
+      const user = assertNotNull(await createUser(context.services.knex))
+      const contextWithUser = context.login(user)
+
+      await expect(
+        resolvers.Mutation.categoryUpdate(
+          null as never,
+          { input: { id: category.id, name: 'unauthorized' } },
+          contextWithUser,
+        ),
+      ).rejects.toThrow('Category not found');
+
+      await expect(
+        resolvers.Mutation.categoryDelete(
+          null as never,
+          { input: { id: category.id } },
+          contextWithUser,
+        ),
+      ).rejects.toThrow('Category not found');
+    });
+
+    it('user not logged in cannot create, update or delete categories', async () => {
+      const { category } = await setup(context);
+
+      await expect(
+        resolvers.Mutation.categoryCreate(
+          null as never,
+          { input: { name: 'unauthorized' } },
+          context,
+        ),
+      ).rejects.toThrow('User must be authenticated to create a category');
+
+      await expect(
+        resolvers.Mutation.categoryUpdate(
+          null as never,
+          { input: { id: category.id, name: 'unauthorized' } },
+          context,
+        ),
+      ).rejects.toThrow('User must be authenticated to update a category');
+
+      await expect(
+        resolvers.Mutation.categoryDelete(
+          null as never,
+          { input: { id: category.id } },
+          context,
+        ),
+      ).rejects.toThrow('User must be authenticated to delete a category');
     });
   });
 
