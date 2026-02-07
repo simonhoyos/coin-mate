@@ -18,7 +18,7 @@
     "check:all": "pnpm run check:lint && pnpm run check:format && pnpm run check:types && pnpm run test",
     "db:seed": "pnpm dlx dotenv-cli -e .env.local -- pnpm dlx tsx src/commands/seed.ts"
   },
-  "packageManager": "pnpm@10.18.3",
+  "packageManager": "pnpm@10.28.2",
   "dependencies": {
     "@apollo/client": "^4.0.7",
     "@apollo/client-integration-nextjs": "^0.14.0",
