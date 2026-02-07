@@ -364,7 +364,7 @@ const getReportByCategoryId = createLoader<
         if (group.month != null && group.year != null) {
           const startDate = set(new Date(), {
             year: group.year,
-            month: group.month - 1,
+            month: group.month,
             date: 1,
             hours: 0,
             minutes: 0,

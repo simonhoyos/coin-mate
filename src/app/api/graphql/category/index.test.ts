@@ -1,4 +1,4 @@
-import { set } from 'date-fns';
+import { getMonth, getYear, set, subMonths } from 'date-fns';
 import { omitBy } from 'lodash';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { assertNotNull } from '@/lib/assert.js';
@@ -23,35 +23,54 @@ async function setup(context: ITestContext) {
     await createCategory(context.services.knex, {
       user_id: user.id,
       space_id: space.id,
-      name: 'test category',
-      description: 'some description',
     }),
   );
 
-  const targetMonth = 1;
-  const targetYear = 2026;
+  const randomPastDate = subMonths(
+    new Date(),
+    Math.floor(Math.random() * 12) + 1,
+  );
+  const targetMonth = getMonth(randomPastDate);
+  const targetYear = getYear(randomPastDate);
 
-  const transactionCreationData = [
-    {
-      user_id: user.id,
-      category_id: category.id,
-      space_id: space.id,
-      amount_cents: 1000,
-      transacted_at: set(new Date(), {
-        year: 2026,
-        month: 0,
-        date: 15,
-      }).toISOString(),
-      type: 'expense',
-    },
-  ];
+  const previousDate = subMonths(randomPastDate, 1);
+
+  const targetMothPrevious = getMonth(previousDate);
+  const targetYearPrevious = getYear(previousDate);
+
+  const transactionCreationDataCurrent = [
+    ...Array(Math.ceil(Math.random() * 3)),
+  ].map(() => ({
+    user_id: user.id,
+    category_id: category.id,
+    space_id: space.id,
+    amount_cents: Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER),
+    transacted_at: set(randomPastDate, {
+      date: Math.floor(Math.random() * 27),
+    }).toISOString(),
+    type: 'expense',
+  }));
+
+  const transactionCreationDataPrevious = [
+    ...Array(Math.ceil(Math.random() * 3)),
+  ].map(() => ({
+    user_id: user.id,
+    category_id: category.id,
+    space_id: space.id,
+    amount_cents: Math.ceil(Math.random() * Number.MAX_SAFE_INTEGER),
+    transacted_at: set(previousDate, {
+      date: Math.floor(Math.random() * 27),
+    }).toISOString(),
+    type: 'expense',
+  }));
 
   await Promise.all(
-    transactionCreationData.map((data) =>
-      createTransactionLedger(
-        context.services.knex,
-        omitBy(data, (v) => v == null),
-      ),
+    [...transactionCreationDataCurrent, ...transactionCreationDataPrevious].map(
+      (data) =>
+        createTransactionLedger(
+          context.services.knex,
+          omitBy(data, (v) => v == null),
+        ),
     ),
   );
 
@@ -60,6 +79,18 @@ async function setup(context: ITestContext) {
     category,
     targetYear,
     targetMonth,
+    targetYearPrevious,
+    targetMothPrevious,
+    totalCountCurrent: transactionCreationDataCurrent.length,
+    totalSumCurrent: transactionCreationDataCurrent.reduce(
+      (sum, transaction) => sum + (transaction.amount_cents ?? 0),
+      0,
+    ),
+    totalCountPrevious: transactionCreationDataPrevious.length,
+    totalSumPrevious: transactionCreationDataPrevious.reduce(
+      (sum, transaction) => sum + (transaction.amount_cents ?? 0),
+      0,
+    ),
   };
 }
 
@@ -235,8 +266,8 @@ describe('graphql/category', () => {
     it('user logged cannot update, or delete non-owned categories', async () => {
       const { category } = await setup(context);
 
-      const user = assertNotNull(await createUser(context.services.knex))
-      const contextWithUser = context.login(user)
+      const user = assertNotNull(await createUser(context.services.knex));
+      const contextWithUser = context.login(user);
 
       await expect(
         resolvers.Mutation.categoryUpdate(
@@ -296,90 +327,38 @@ describe('graphql/category', () => {
     afterAll(async () => Promise.all(destroyers.map((destroy) => destroy())));
 
     it('filters report by month and year', async () => {
-      const user = await createUser(context.services.knex);
-      const contextWithUser = context.login(user);
-
-      const space = await createSpace(
-        context.services.knex,
-        omitBy({ user_id: user?.id }, (v) => v == null),
-      );
-
-      const category = await createCategory(
-        context.services.knex,
-        omitBy({ user_id: user?.id, space_id: space?.id }, (v) => v == null),
-      );
-
-      const targetMonth = 1; // January
-      const targetYear = 2026;
-
-      const transactionCreationData = [
-        {
-          user_id: user?.id,
-          category_id: category?.id,
-          space_id: space?.id,
-          amount_cents: 1000,
-          transacted_at: set(new Date(), {
-            year: 2026,
-            month: 0,
-            date: 15,
-          }).toISOString(), // Jan 15, 2026
-          type: 'expense',
-        },
-        {
-          user_id: user?.id,
-          category_id: category?.id,
-          space_id: space?.id,
-          amount_cents: 2000,
-          transacted_at: set(new Date(), {
-            year: 2026,
-            month: 0,
-            date: 20,
-          }).toISOString(), // Jan 20, 2026
-          type: 'expense',
-        },
-        {
-          user_id: user?.id,
-          category_id: category?.id,
-          space_id: space?.id,
-          amount_cents: 5000,
-          transacted_at: set(new Date(), {
-            year: 2026,
-            month: 1,
-            date: 15,
-          }).toISOString(), // Feb 15, 2026
-          type: 'expense',
-        },
-      ];
-
-      await Promise.all(
-        transactionCreationData.map((data) =>
-          createTransactionLedger(
-            context.services.knex,
-            omitBy(data, (v) => v == null),
-          ),
-        ),
-      );
+      const setupResult = await setup(context);
 
       const result = await resolvers.Category.report(
-        { id: category?.id ?? '' },
-        { month: targetMonth, year: targetYear },
-        contextWithUser,
+        { id: setupResult.category.id },
+        { month: setupResult.targetMonth, year: setupResult.targetYear },
+        setupResult.contextWithUser,
       );
 
       expect(result).not.toBeNull();
-      expect(result?.totalCount).toBe(2);
-      expect(result?.totalAmountCents).toBe(3000);
-      expect(result?.averageAmountCents).toBe(1500);
-
-      const resultFeb = await resolvers.Category.report(
-        { id: category?.id ?? '' },
-        { month: 2, year: 2026 },
-        contextWithUser,
+      expect(result?.totalCount).toBe(setupResult.totalCountCurrent);
+      expect(result?.totalAmountCents).toBe(setupResult.totalSumCurrent);
+      expect(result?.averageAmountCents).toBe(
+        setupResult.totalSumCurrent / setupResult.totalCountCurrent,
       );
 
-      expect(resultFeb).not.toBeNull();
-      expect(resultFeb?.totalCount).toBe(1);
-      expect(resultFeb?.totalAmountCents).toBe(5000);
+      const resultPrevious = await resolvers.Category.report(
+        { id: setupResult.category.id },
+        {
+          month: setupResult.targetMothPrevious,
+          year: setupResult.targetYearPrevious,
+        },
+        setupResult.contextWithUser,
+      );
+
+      expect(resultPrevious).not.toBeNull();
+      expect(resultPrevious?.totalCount).toBe(setupResult.totalCountPrevious);
+      expect(resultPrevious?.totalAmountCents).toBe(
+        setupResult.totalSumPrevious,
+      );
+      expect(resultPrevious?.averageAmountCents).toBe(
+        setupResult.totalSumPrevious / setupResult.totalCountPrevious,
+      );
     });
   });
 });

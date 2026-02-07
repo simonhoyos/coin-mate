@@ -1,3 +1,4 @@
+import type Dataloader from 'dataloader';
 import type { NextApiRequest } from 'next';
 import type { User } from '@/models/user';
 import { createContextInner } from '../context';
@@ -19,6 +20,8 @@ export async function createTestContext() {
 
   return {
     ...context,
+
+    dl: new Map<symbol, Dataloader<unknown, unknown>>(),
 
     login(user: User | undefined) {
       return {
