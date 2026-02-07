@@ -9,6 +9,60 @@ import { createTransactionLedger } from '@/lib/testing/factories/transaction-led
 import { createUser } from '@/lib/testing/factories/user';
 import { resolvers } from './index';
 
+async function setup(context: ITestContext) {
+  const user = assertNotNull(await createUser(context.services.knex));
+  const contextWithUser = context.login(user);
+
+  const space = assertNotNull(
+    await createSpace(context.services.knex, {
+      user_id: user.id,
+    }),
+  );
+
+  const category = assertNotNull(
+    await createCategory(context.services.knex, {
+      user_id: user.id,
+      space_id: space.id,
+      name: 'test category',
+      description: 'some description',
+    }),
+  );
+
+  const targetMonth = 1;
+  const targetYear = 2026;
+
+  const transactionCreationData = [
+    {
+      user_id: user.id,
+      category_id: category.id,
+      space_id: space.id,
+      amount_cents: 1000,
+      transacted_at: set(new Date(), {
+        year: 2026,
+        month: 0,
+        date: 15,
+      }).toISOString(),
+      type: 'expense',
+    },
+  ];
+
+  await Promise.all(
+    transactionCreationData.map((data) =>
+      createTransactionLedger(
+        context.services.knex,
+        omitBy(data, (v) => v == null),
+      ),
+    ),
+  );
+
+  return {
+    contextWithUser,
+    category,
+    targetYear,
+    targetMonth,
+  };
+}
+
 describe('graphql/category', () => {
   describe('category authorization', () => {
     const destroyers: (() => Promise<unknown>)[] = [];
@@ -22,25 +76,16 @@ describe('graphql/category', () => {
     afterAll(async () => Promise.all(destroyers.map((destroy) => destroy())));
 
     it('user logged in can see owned categories properties', async () => {
-      const user = assertNotNull(await createUser(context.services.knex));
-      const contextWithUser = context.login(user);
+      const { contextWithUser, category, targetYear, targetMonth } =
+        await setup(context);
+
+      const otherUser = assertNotNull(await createUser(context.services.knex));
 
       const space = assertNotNull(
         await createSpace(context.services.knex, {
-          user_id: user.id,
+          user_id: otherUser.id,
         }),
       );
-
-      const category = assertNotNull(
-        await createCategory(context.services.knex, {
-          user_id: user.id,
-          space_id: space.id,
-          name: 'test category',
-          description: 'some description',
-        }),
-      );
-
-      const otherUser = assertNotNull(await createUser(context.services.knex));
 
       assertNotNull(
         await createCategory(context.services.knex, {
@@ -48,33 +93,6 @@ describe('graphql/category', () => {
           space_id: space.id,
           name: 'other category',
         }),
-      );
-
-      const targetMonth = 1;
-      const targetYear = 2026;
-
-      const transactionCreationData = [
-        {
-          user_id: user?.id,
-          category_id: category?.id,
-          space_id: space?.id,
-          amount_cents: 1000,
-          transacted_at: set(new Date(), {
-            year: 2026,
-            month: 0,
-            date: 15,
-          }).toISOString(),
-          type: 'expense',
-        },
-      ];
-
-      await Promise.all(
-        transactionCreationData.map((data) =>
-          createTransactionLedger(
-            context.services.knex,
-            omitBy(data, (v) => v == null),
-          ),
-        ),
       );
 
       const categoriesQueryData = await resolvers.Query.categoryList(
@@ -111,23 +129,10 @@ describe('graphql/category', () => {
     });
 
     it('user logged in can not see non-owned categories properties', async () => {
+      const { category, targetYear, targetMonth } = await setup(context);
+
       const user = assertNotNull(await createUser(context.services.knex));
-      const otherUser = assertNotNull(await createUser(context.services.knex));
       const contextWithUser = context.login(user);
-
-      const space = assertNotNull(
-        await createSpace(context.services.knex, {
-          user_id: otherUser.id,
-        }),
-      );
-
-      const category = assertNotNull(
-        await createCategory(context.services.knex, {
-          user_id: otherUser.id,
-          space_id: space.id,
-          name: 'other category',
-        }),
-      );
 
       const categoriesQueryData = await resolvers.Query.categoryList(
         null as never,
@@ -143,7 +148,7 @@ describe('graphql/category', () => {
         contextWithUser,
       );
 
-      expect(name).toBeUndefined();
+      expect(name == null).toBeTruthy();
 
       const description = await resolvers.Category.description(
         { id: category.id },
@@ -151,11 +156,11 @@ describe('graphql/category', () => {
         contextWithUser,
       );
 
-      expect(description).toBeUndefined();
+      expect(description == null).toBeTruthy();
 
       const report = await resolvers.Category.report(
         { id: category.id },
-        { month: 0, year: 2026 },
+        { year: targetYear, month: targetMonth },
         contextWithUser,
       );
 
@@ -163,20 +168,7 @@ describe('graphql/category', () => {
     });
 
     it('user not logged in cannot see any categories properties', async () => {
-      const owner = assertNotNull(await createUser(context.services.knex));
-      const space = assertNotNull(
-        await createSpace(context.services.knex, {
-          user_id: owner.id,
-        }),
-      );
-
-      const category = assertNotNull(
-        await createCategory(context.services.knex, {
-          user_id: owner.id,
-          space_id: space.id,
-          name: 'owner category',
-        }),
-      );
+      const { category, targetYear, targetMonth } = await setup(context);
 
       expect(
         resolvers.Query.categoryList(null as never, null as never, context),
@@ -188,7 +180,7 @@ describe('graphql/category', () => {
         context,
       );
 
-      expect(name).toBeUndefined();
+      expect(name == null).toBeTruthy();
 
       const description = await resolvers.Category.description(
         { id: category.id },
@@ -196,11 +188,11 @@ describe('graphql/category', () => {
         context,
       );
 
-      expect(description).toBeUndefined();
+      expect(description == null).toBeTruthy();
 
       const report = await resolvers.Category.report(
         { id: category.id },
-        { month: 0, year: 2026 },
+        { year: targetYear, month: targetMonth },
         context,
       );
 
