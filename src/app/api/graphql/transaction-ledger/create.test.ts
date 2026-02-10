@@ -15,7 +15,7 @@ import { createCategory } from '@/lib/testing/factories/category';
 import { createSpace } from '@/lib/testing/factories/space';
 import { createUser } from '@/lib/testing/factories/user';
 import type { TransactionLedger } from '@/models/transaction-ledger';
-import { resolvers } from './index';
+import { resolvers } from '.';
 
 describe('TransactionLedger.create', () => {
   const destroyers: (() => Promise<unknown>)[] = [];

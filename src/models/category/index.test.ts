@@ -9,7 +9,7 @@ import { createSpace } from '@/lib/testing/factories/space';
 import { createTransactionLedger } from '@/lib/testing/factories/transaction-ledger';
 import { createUser } from '@/lib/testing/factories/user';
 import type { Audit } from '../audit';
-import { Category } from './index';
+import { Category } from '.';
 
 describe('models/category', () => {
   const destroyers: (() => Promise<unknown>)[] = [];

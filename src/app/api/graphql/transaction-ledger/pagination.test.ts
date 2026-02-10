@@ -7,7 +7,7 @@ import { createCategory } from '@/lib/testing/factories/category';
 import { createSpace } from '@/lib/testing/factories/space';
 import { createTransactionLedger } from '@/lib/testing/factories/transaction-ledger';
 import { createUser } from '@/lib/testing/factories/user';
-import { resolvers } from './index';
+import { resolvers } from '.';
 
 describe('transactionLedgerList pagination (integration)', () => {
   const destroyers: (() => Promise<unknown>)[] = [];

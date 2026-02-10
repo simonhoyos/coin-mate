@@ -5,7 +5,7 @@ import { clearSession, createSession } from '@/lib/session';
 import { createTestContext } from '@/lib/testing/context';
 import { createUser } from '@/lib/testing/factories/user';
 import knexConfig from '../../../../../knexfile.js';
-import { resolvers } from './index';
+import { resolvers } from '.';
 
 const testKnex = knex(knexConfig);
 

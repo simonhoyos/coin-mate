@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { assertNotNull } from '@/lib/assert';
 import { createTestContext, type ITestContext } from '@/lib/testing/context';
-import { ExchangeRate } from './exchange-rate';
+import { ExchangeRate } from '.';
 
 describe('ExchangeRate', () => {
   const destroyers: (() => Promise<unknown>)[] = [];
@@ -14,9 +14,9 @@ describe('ExchangeRate', () => {
 
   afterAll(async () => Promise.all(destroyers.map((destroy) => destroy())));
 
-  it('should log and retrieve the latest exchange rate', async () => {
+  it('logs and retrieve the latest exchange rate', async () => {
     const currencyCode = `USDCOP-${crypto.randomUUID()}`;
-    const rateCents = 410000;
+    const rateCents = 4_100_00;
     const provider = 'test_provider';
     const data = { meta: 'test_data' };
 
@@ -49,16 +49,16 @@ describe('ExchangeRate', () => {
     expect(fetchedRate?.rate_cents).toBe(rateCents);
   });
 
-  it('should return null if no rate exists', async () => {
-    const fetchedRate = await ExchangeRate.getLatestRate({
-      context,
-      currencyCode: 'NON_EXISTENT',
-    });
-
-    expect(fetchedRate).toBeNull();
+  it('fails if no rate exists', async () => {
+    expect(
+      ExchangeRate.getLatestRate({
+        context,
+        currencyCode: 'NON_EXISTENT',
+      }),
+    ).rejects.toThrow('Exchange rate not found');
   });
 
-  it('should retrieve the most recent rate among multiple entries', async () => {
+  it('retrieves the most recent rate among multiple entries', async () => {
     const currencyCode = 'USDCOP_LATEST_TEST';
 
     await ExchangeRate.logRate({

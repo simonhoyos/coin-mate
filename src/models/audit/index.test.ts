@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import { createTestContext, type ITestContext } from '@/lib/testing/context.js';
 import { createUser } from '@/lib/testing/factories/user';
-import { Audit } from './index';
+import { Audit } from '.';
 
 describe('models/audit', () => {
   const destroyers: (() => Promise<unknown>)[] = [];
