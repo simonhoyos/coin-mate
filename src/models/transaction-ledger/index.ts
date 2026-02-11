@@ -5,9 +5,9 @@ import { assertNotNull } from '@/lib/assert';
 import { fetchExchangeRate } from '@/lib/currency';
 import { createLoader } from '@/lib/dataloader';
 import type { IContext } from '@/lib/types';
-import { Audit } from './audit';
-import type { Space } from './space';
-import { User } from './user';
+import { Audit } from '../audit';
+import type { Space } from '../space';
+import { User } from '../user';
 
 export class TransactionLedger {
   id!: string;
@@ -54,8 +54,6 @@ export class TransactionLedger {
       category_id: string;
     };
   }) {
-    const parsedData = TransactionLedgerCreateSchema.parse(args.data);
-
     const userId = assertNotNull(
       args.context.user?.id,
       'User must be authenticated to create a transaction',
@@ -70,6 +68,8 @@ export class TransactionLedger {
       }
     });
 
+    const parsedData = TransactionLedgerCreateSchema.parse(args.data);
+
     const amountCents =
       parsedData.currency !== 'COP'
         ? Math.round(
@@ -80,13 +80,16 @@ export class TransactionLedger {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
-        const space = await trx<Space>('space')
-          .select('space.id')
-          .where({
-            user_id: userId,
-          })
-          .limit(1)
-          .first();
+        const space = assertNotNull(
+          await trx<Space>('space')
+            .select('space.id')
+            .where({
+              user_id: userId,
+            })
+            .limit(1)
+            .first(),
+          'Space not found for current user',
+        );
 
         const payload = omitBy(
           {
@@ -107,7 +110,7 @@ export class TransactionLedger {
 
             user_id: userId,
             category_id: parsedData.category_id,
-            space_id: assertNotNull(space?.id, 'Space not found for the user'),
+            space_id: space.id,
           },
           (value) => value == null,
         );
@@ -156,8 +159,6 @@ export class TransactionLedger {
       category_id: string;
     };
   }) {
-    const parsedData = TransactionLedgerUpdateSchema.parse(args.data);
-
     const userId = assertNotNull(
       args.context.user?.id,
       'User must be authenticated to update a transaction',
@@ -172,11 +173,13 @@ export class TransactionLedger {
       }
     });
 
+    const parsedData = TransactionLedgerUpdateSchema.parse(args.data);
+
     await TransactionLedger.gen({
       context: args.context,
       id: parsedData.id,
-    }).then((category) => {
-      if (category == null) {
+    }).then((transaction) => {
+      if (transaction == null) {
         throw new Error('Transaction not found');
       }
     });
@@ -239,11 +242,9 @@ export class TransactionLedger {
       id: string;
     };
   }) {
-    const parsedData = TransactionLedgerDeleteSchema.parse(args.data);
-
     const userId = assertNotNull(
       args.context.user?.id,
-      'User must be authenticated to update a transaction',
+      'User must be authenticated to delete a transaction',
     );
 
     await User.gen({
@@ -255,12 +256,14 @@ export class TransactionLedger {
       }
     });
 
+    const parsedData = TransactionLedgerDeleteSchema.parse(args.data);
+
     await TransactionLedger.gen({
       context: args.context,
       id: parsedData.id,
-    }).then((category) => {
-      if (category == null) {
-        throw new Error('Category not found');
+    }).then((transaction) => {
+      if (transaction == null) {
+        throw new Error('Transaction not found');
       }
     });
 
@@ -312,13 +315,26 @@ const TransactionLedgerCreateSchema = z.object({
   amount_cents: z
     .string()
     .regex(/^\d+\.\d{2}$/, 'Unsupported amount format, expected format: 0.00')
-    .transform((value) => parseInt(value.replace('.', ''), 10))
+    .transform((value, ctx) => {
+      try {
+        return parseInt(value.replace('.', ''), 10);
+      } catch (_e) {
+        ctx.addIssue('Invalid amount_cents format');
+      }
+    })
     .pipe(z.number()),
   transacted_at: z
     .string()
-    .transform((value) =>
-      addHours(format(parseISO(value), 'yyyy-MM-dd'), 12).toISOString(),
-    )
+    .transform((value, ctx) => {
+      try {
+        return addHours(
+          format(parseISO(value), 'yyyy-MM-dd'),
+          12,
+        ).toISOString();
+      } catch (_e) {
+        ctx.addIssue('Invalid date format');
+      }
+    })
     .pipe(z.iso.datetime()),
   type: TypeEnum,
   category_id: z.uuid(),
