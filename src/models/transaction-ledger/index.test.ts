@@ -103,6 +103,84 @@ describe('models/category', () => {
         transacted_at: new Date(createdTransaction.transacted_at).toISOString(),
       }),
     );
+
+    const updatedTransaction = assertNotNull(
+      (
+        await TransactionLedger.update({
+          context: contextWithUser,
+          data: {
+            id: createdTransaction.id,
+            category_id: category.id,
+            ...TRANSACTION_BASE_DATA,
+            concept: 'updated concept',
+          },
+        })
+      ).transaction,
+    );
+
+    const updatedAuditLog = await context.services
+      .knex<Audit>('audit')
+      .where({
+        object_id: updatedTransaction.id,
+        user_id: user.id,
+        object: 'transaction_ledger',
+        operation: 'update',
+      })
+      .orderBy('created_at', 'desc')
+      .limit(1)
+      .first();
+
+    expect(updatedAuditLog?.id != null).toBeTruthy();
+    expect(updatedAuditLog?.data.payload).toMatchObject(
+      expect.objectContaining({
+        ...omit(updatedTransaction, [
+          'created_at',
+          'updated_at',
+          'archived_at',
+          'id',
+          'amount_cents',
+          'original_amount_cents',
+          'transacted_at',
+          'space_id',
+          'user_id'
+        ]),
+        amount_cents: Number(updatedTransaction.amount_cents),
+        original_amount_cents: Number(updatedTransaction.original_amount_cents),
+        transacted_at: new Date(updatedTransaction.transacted_at).toISOString(),
+      }),
+    );
+
+    const deletedTransaction = assertNotNull(
+      (
+        await TransactionLedger.delete({
+          context: contextWithUser,
+          data: {
+            id: updatedTransaction.id,
+          },
+        })
+      ).transaction,
+    );
+
+    const deletedAuditLog = await context.services
+      .knex<Audit>('audit')
+      .where({
+        object_id: deletedTransaction.id,
+        user_id: user.id,
+        object: 'transaction_ledger',
+        operation: 'delete',
+      })
+      .orderBy('created_at', 'desc')
+      .limit(1)
+      .first();
+
+    expect(deletedAuditLog?.id != null).toBeTruthy();
+    expect(deletedAuditLog?.data.payload).toMatchObject(
+      expect.objectContaining({
+        archived_at: new Date(
+          assertNotNull(deletedTransaction.archived_at),
+        ).toISOString(),
+      }),
+    );
   });
 
   it('converts USD to COP when creating a transaction', async () => {
