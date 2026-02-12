@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import type { IContext } from '@/lib/types';
-import { Audit } from './audit';
+import { Audit } from '../audit';
 
 export class Space {
   id!: string;
@@ -25,21 +25,34 @@ export class Space {
     const parsedData = SpaceCreateSchema.parse(args.data);
 
     const payload = {
+      user_id: parsedData.userId,
       name: parsedData.name,
       description: parsedData.description,
-      user_id: parsedData.userId,
     };
 
-    const [space] = await args.trx<Space>('space').insert(payload, '*');
+    const space = assertNotNull(
+      (await args.trx<Space>('space').insert(payload, '*')).at(0),
+      'Space could not be created',
+    );
 
     await Audit.log({
       trx: args.trx,
       context: args.context,
       data: {
         object: 'space',
-        object_id: assertNotNull(space?.id, 'Space could not be created'),
+        object_id: space.id,
         operation: 'create',
-        payload,
+        payload: payload,
+      },
+    });
+
+    await SpaceUser.create({
+      trx: args.trx,
+      context: args.context,
+      data: {
+        userId: parsedData.userId,
+        spaceId: space.id,
+        role: 'admin',
       },
     });
 
@@ -81,19 +94,18 @@ export class SpaceUser {
       role: parsedData.role,
     };
 
-    const [spaceUser] = await args
-      .trx<SpaceUser>('space_user')
-      .insert(payload, '*');
+    const spaceUser = assertNotNull(
+      (await args.trx<SpaceUser>('space_user').insert(payload, '*')).at(0),
+
+      'SpaceUser could not be created',
+    );
 
     await Audit.log({
       trx: args.trx,
       context: args.context,
       data: {
         object: 'space_user',
-        object_id: assertNotNull(
-          spaceUser?.id,
-          'SpaceUser could not be created',
-        ),
+        object_id: spaceUser.id,
         operation: 'create',
         payload,
       },

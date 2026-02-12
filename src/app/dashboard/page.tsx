@@ -129,7 +129,7 @@ export default function DashboardPage() {
     `,
     {
       variables: {
-        month: currentMonthDate.getMonth() + 1,
+        month: currentMonthDate.getMonth(),
         year: currentMonthDate.getFullYear(),
       },
     },

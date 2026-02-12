@@ -6,7 +6,7 @@ import {
   REFRESH_THRESHOLD_MS,
   SESSION_DURATION_MS,
   shouldRefreshSession,
-} from './session';
+} from '../session';
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(),

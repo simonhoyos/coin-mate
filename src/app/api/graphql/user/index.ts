@@ -3,7 +3,7 @@ import { assertNotNull } from '@/lib/assert';
 import { clearSession, createSession } from '@/lib/session';
 import { createToken } from '@/lib/token';
 import type { IContext } from '@/lib/types';
-import { Space, SpaceUser } from '@/models/space';
+import { Space } from '@/models/space';
 import { User } from '@/models/user';
 
 export const typeDefs = `#graphql
@@ -95,7 +95,7 @@ export const resolvers = {
             },
           });
 
-          const spaceResult = await Space.create({
+          await Space.create({
             trx,
             context,
             data: {
@@ -105,22 +105,6 @@ export const resolvers = {
               ),
               name: 'Personal',
               description: 'Personal space',
-            },
-          });
-
-          await SpaceUser.create({
-            trx,
-            context,
-            data: {
-              userId: assertNotNull(
-                signUpResult.user?.id,
-                'User ID is null after sign up',
-              ),
-              spaceId: assertNotNull(
-                spaceResult.space?.id,
-                'Space ID is null after space creation',
-              ),
-              role: 'admin',
             },
           });
 

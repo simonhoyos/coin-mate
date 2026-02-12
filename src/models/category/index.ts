@@ -4,9 +4,9 @@ import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import { createLoader } from '@/lib/dataloader';
 import type { IContext } from '@/lib/types';
-import { Audit } from './audit';
-import type { Space } from './space';
-import { User } from './user';
+import { Audit } from '../audit';
+import type { Space } from '../space';
+import { User } from '../user';
 
 export class Category {
   id!: string;
@@ -37,8 +37,6 @@ export class Category {
     context: IContext;
     data: z.infer<typeof CategoryCreateSchema>;
   }) {
-    CategoryCreateSchema.parse(args.data);
-
     const userId = assertNotNull(
       args.context.user?.id,
       'User must be authenticated to create a category',
@@ -53,34 +51,39 @@ export class Category {
       }
     });
 
+    const parsedData = CategoryCreateSchema.parse(args.data);
+
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
-        const space = await trx<Space>('space')
-          .select('space.id')
-          .where({
-            user_id: userId,
-          })
-          .limit(1)
-          .first();
+        const space = assertNotNull(
+          await trx<Space>('space')
+            .select('space.id')
+            .where({
+              user_id: userId,
+            })
+            .limit(1)
+            .first(),
+          'Space not found for user',
+        );
 
         const payload = {
-          name: args.data.name.toLowerCase(),
-          description: args.data.description,
+          name: parsedData.name.toLowerCase(),
+          description: parsedData.description,
           user_id: userId,
-          space_id: assertNotNull(space?.id, 'Space not found for the user'),
+          space_id: space.id,
         };
 
-        const [category] = await trx<Category>('category').insert(payload, '*');
+        const category = assertNotNull(
+          (await trx<Category>('category').insert(payload, '*')).at(0),
+          'Category could not be created',
+        );
 
         await Audit.log({
           trx,
           context: args.context,
           data: {
             object: 'category',
-            object_id: assertNotNull(
-              category?.id,
-              'Category could not be created',
-            ),
+            object_id: category.id,
             operation: 'create',
             payload,
           },
@@ -101,8 +104,6 @@ export class Category {
     context: IContext;
     data: z.infer<typeof CategoryUpdateSchema>;
   }) {
-    CategoryUpdateSchema.parse(args.data);
-
     await User.gen({
       context: args.context,
       id: assertNotNull(
@@ -115,9 +116,11 @@ export class Category {
       }
     });
 
+    const parsedData = CategoryUpdateSchema.parse(args.data);
+
     await Category.gen({
       context: args.context,
-      id: args.data.id,
+      id: parsedData.id,
     }).then((category) => {
       if (category == null) {
         throw new Error('Category not found');
@@ -128,27 +131,27 @@ export class Category {
       async (trx) => {
         const payload = omitBy(
           {
-            name: args.data.name,
-            description: args.data.description,
+            name: parsedData.name,
+            description: parsedData.description,
           },
           (value) => (value ?? '') === '',
         );
 
-        const [category] = await trx<Category>('category')
-          .update(payload, '*')
-          .where({
-            id: args.data.id,
-          });
+        const category = assertNotNull(
+          (
+            await trx<Category>('category').update(payload, '*').where({
+              id: args.data.id,
+            })
+          ).at(0),
+          'Category could not be updated',
+        );
 
         await Audit.log({
           trx,
           context: args.context,
           data: {
             object: 'category',
-            object_id: assertNotNull(
-              category?.id,
-              'Category could not be updated',
-            ),
+            object_id: category.id,
             operation: 'update',
             payload,
           },
@@ -169,8 +172,6 @@ export class Category {
     context: IContext;
     data: z.infer<typeof CategoryDeleteSchema>;
   }) {
-    CategoryDeleteSchema.parse(args.data);
-
     await User.gen({
       context: args.context,
       id: assertNotNull(
@@ -183,9 +184,11 @@ export class Category {
       }
     });
 
+    const parsedData = CategoryDeleteSchema.parse(args.data);
+
     await Category.gen({
       context: args.context,
-      id: args.data.id,
+      id: parsedData.id,
     }).then((category) => {
       if (category == null) {
         throw new Error('Category not found');
@@ -198,21 +201,21 @@ export class Category {
           archived_at: new Date(),
         };
 
-        const [category] = await trx<Category>('category')
-          .update(payload, '*')
-          .where({
-            id: args.data.id,
-          });
+        const category = assertNotNull(
+          (
+            await trx<Category>('category').update(payload, '*').where({
+              id: parsedData.id,
+            })
+          ).at(0),
+          'Category could not be deleted',
+        );
 
         await Audit.log({
           trx,
           context: args.context,
           data: {
             object: 'category',
-            object_id: assertNotNull(
-              category?.id,
-              'Category could not be deleted',
-            ),
+            object_id: category.id,
             operation: 'delete',
             payload,
           },
@@ -235,11 +238,15 @@ const CategoryCreateSchema = z.object({
   description: z.string().max(256).optional(),
 });
 
-const CategoryUpdateSchema = z.object({
-  id: z.uuid(),
-  name: z.string().min(1).max(32).optional(),
-  description: z.string().max(256).optional(),
-});
+const CategoryUpdateSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string().min(1).max(32).optional(),
+    description: z.string().max(256).optional(),
+  })
+  .refine((data) => data.name != null && data.description != null, {
+    message: 'Name or description should be set to update a category',
+  });
 
 const CategoryDeleteSchema = z.object({
   id: z.uuid(),
@@ -364,7 +371,7 @@ const getReportByCategoryId = createLoader<
         if (group.month != null && group.year != null) {
           const startDate = set(new Date(), {
             year: group.year,
-            month: group.month - 1,
+            month: group.month,
             date: 1,
             hours: 0,
             minutes: 0,
