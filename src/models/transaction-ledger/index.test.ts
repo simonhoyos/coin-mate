@@ -142,7 +142,7 @@ describe('models/category', () => {
           'original_amount_cents',
           'transacted_at',
           'space_id',
-          'user_id'
+          'user_id',
         ]),
         amount_cents: Number(updatedTransaction.amount_cents),
         original_amount_cents: Number(updatedTransaction.original_amount_cents),

@@ -1,5 +1,6 @@
 import type { Knex } from 'knex';
 import { z } from 'zod';
+import { assertNotNull } from '@/lib/assert';
 import type { IContext } from '@/lib/types';
 
 const AuditLogSchema = z.object({
@@ -35,20 +36,25 @@ export class Audit {
     context: IContext;
     data: z.infer<typeof AuditLogSchema>;
   }) {
-    AuditLogSchema.parse(args.data);
+    const parsedData = AuditLogSchema.parse(args.data);
 
-    const [audit] = await args.context.services.knex<Audit>('audit').insert(
-      {
-        user_id: args.context.user?.id ?? null,
-        object: args.data.object,
-        object_id: args.data.object_id,
-        operation: args.data.operation,
-        data: {
-          payload: args.data.payload,
-        },
-        metadata: args.context.metadata ?? {},
-      },
-      '*',
+    const audit = assertNotNull(
+      (
+        await args.context.services.knex<Audit>('audit').insert(
+          {
+            user_id: args.context.user?.id ?? null,
+            object: parsedData.object,
+            object_id: parsedData.object_id,
+            operation: parsedData.operation,
+            data: {
+              payload: parsedData.payload,
+            },
+            metadata: args.context.metadata ?? {},
+          },
+          '*',
+        )
+      ).at(0),
+      'Could not create audit log',
     );
 
     return audit;
