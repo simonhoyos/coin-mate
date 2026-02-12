@@ -5,7 +5,7 @@ import { assertNotNull } from '@/lib/assert';
 import { createLoader } from '@/lib/dataloader';
 import { createToken } from '@/lib/token';
 import type { IContext } from '@/lib/types';
-import { Audit } from './audit';
+import { Audit } from '../audit';
 
 export class User {
   id!: string;
@@ -19,8 +19,7 @@ export class User {
   static async gen(args: { context: IContext; id: string }) {
     const record = await getUserById({ context: args.context, id: args.id });
 
-    // TODO: authorization checks
-    return record;
+    return args.context.user?.id === record?.id ? record : null;
   }
 
   static async signUp(args: {
@@ -28,30 +27,33 @@ export class User {
     context: IContext;
     data: z.infer<typeof UserSignUpSchema>;
   }) {
-    UserSignUpSchema.parse(args.data);
+    const parsedData = UserSignUpSchema.parse(args.data);
 
     const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(args.data.password, salt);
+    const hash = await bcrypt.hash(parsedData.password, salt);
 
     const payload = {
-      email: args.data.email,
+      email: parsedData.email,
       password: hash,
     };
 
-    const [user] = await args.trx<User>('user').insert(payload, '*');
+    const user = assertNotNull(
+      (await args.trx<User>('user').insert(payload, '*')).at(0),
+      'User could not be created',
+    );
 
     await Audit.log({
       trx: args.trx,
       context: args.context,
       data: {
         object: 'user',
-        object_id: assertNotNull(user?.id, 'User could not be created'),
+        object_id: user?.id,
         operation: 'create',
         payload,
       },
     });
 
-    const token = user != null ? createToken(user.id, args.context) : null;
+    const token = createToken(user.id, args.context);
 
     return {
       user,
@@ -63,11 +65,11 @@ export class User {
     context: IContext;
     data: z.infer<typeof UserSignInSchema>;
   }) {
-    UserSignInSchema.parse(args.data);
+    const parsedData = UserSignInSchema.parse(args.data);
 
     const user = await args.context.services
       .knex<User>('user')
-      .where('email', args.data.email)
+      .where('email', parsedData.email)
       .limit(1)
       .first();
 
@@ -75,13 +77,13 @@ export class User {
       throw new Error('Invalid email or password');
     }
 
-    const isValid = await bcrypt.compare(args.data.password, user.password);
+    const isValid = await bcrypt.compare(parsedData.password, user.password);
 
     if (isValid !== true) {
       throw new Error('Invalid email or password');
     }
 
-    const token = user != null ? createToken(user.id, args.context) : null;
+    const token = createToken(user.id, args.context);
 
     return {
       user,

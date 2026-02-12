@@ -1,16 +1,15 @@
 import bcrypt from 'bcryptjs';
 import type { Knex } from 'knex';
+import { assertNotNull } from '@/lib/assert';
 import type { User } from '@/models/user';
 
 export async function createUser(
   knex: Knex,
   overrides: Partial<User> = {},
-): Promise<User | undefined> {
+): Promise<User & { originalPassword: string }> {
+  const originalPassword = overrides.password ?? 'Test-password123';
   const salt = await bcrypt.genSalt(10);
-  const hash = await bcrypt.hash(
-    overrides.password ?? 'Test-password123',
-    salt,
-  );
+  const hash = await bcrypt.hash(originalPassword, salt);
 
   const payload = {
     email: `user-${crypto.randomUUID()}@example.com`,
@@ -18,7 +17,13 @@ export async function createUser(
     password: hash,
   };
 
-  const [user] = await knex<User>('user').insert(payload, '*');
+  const user = assertNotNull(
+    (await knex<User>('user').insert(payload, '*')).at(0),
+    'factory/createUser: user could not be created',
+  );
 
-  return user;
+  return {
+    ...user,
+    originalPassword,
+  };
 }
