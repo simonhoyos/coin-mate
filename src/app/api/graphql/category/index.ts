@@ -130,7 +130,7 @@ export const resolvers = {
 
     async categoryUpdate(
       _parent: never,
-      args: { input: { id: string; name?: string; description?: string } },
+      args: { input: { id: string; name: string; description?: string } },
       context: IContext,
     ) {
       const { id, name, description } = args.input;

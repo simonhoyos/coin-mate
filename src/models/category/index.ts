@@ -1,8 +1,9 @@
 import { addMonths, set } from 'date-fns';
-import { omitBy } from 'lodash';
+import { isEmpty, pick } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import { createLoader } from '@/lib/dataloader';
+import { getObjectDiff } from '@/lib/diff';
 import type { IContext } from '@/lib/types';
 import { Audit } from '../audit';
 import type { Space } from '../space';
@@ -67,7 +68,7 @@ export class Category {
         );
 
         const payload = {
-          name: parsedData.name.toLowerCase(),
+          name: parsedData.name,
           description: parsedData.description,
           user_id: userId,
           space_id: space.id,
@@ -129,20 +130,28 @@ export class Category {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
-        const payload = omitBy(
-          {
-            name: parsedData.name,
-            description: parsedData.description,
-          },
-          (value) => (value ?? '') === '',
+        const query = trx<Category>('category')
+          .where({ id: parsedData.id })
+          .limit(1);
+
+        const categoryToUpdate = assertNotNull(
+          await query.first(),
+          'Category not found',
         );
 
+        const payload = getObjectDiff(
+          categoryToUpdate as unknown as Record<string, unknown>,
+          pick(parsedData, ['name', 'description']),
+        );
+
+        if (isEmpty(payload) === true) {
+          return {
+            category: categoryToUpdate,
+          };
+        }
+
         const category = assertNotNull(
-          (
-            await trx<Category>('category').update(payload, '*').where({
-              id: args.data.id,
-            })
-          ).at(0),
+          (await query.update(payload, '*')).at(0),
           'Category could not be updated',
         );
 
@@ -234,19 +243,17 @@ export class Category {
 }
 
 const CategoryCreateSchema = z.object({
-  name: z.string().min(1).max(32),
+  name: z
+    .string()
+    .min(1)
+    .max(32)
+    .transform((val) => val.toLowerCase()),
   description: z.string().max(256).optional(),
 });
 
-const CategoryUpdateSchema = z
-  .object({
-    id: z.uuid(),
-    name: z.string().min(1).max(32).optional(),
-    description: z.string().max(256).optional(),
-  })
-  .refine((data) => data.name != null && data.description != null, {
-    message: 'Name or description should be set to update a category',
-  });
+const CategoryUpdateSchema = CategoryCreateSchema.extend({
+  id: z.uuid(),
+});
 
 const CategoryDeleteSchema = z.object({
   id: z.uuid(),

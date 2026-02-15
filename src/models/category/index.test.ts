@@ -66,6 +66,7 @@ describe('models/category', () => {
           context: contextWithUser,
           data: {
             id: category.id,
+            // @ts-expect-error undefined is not assignable to name
             name,
             description,
           },
