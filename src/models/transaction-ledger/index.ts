@@ -1,9 +1,10 @@
 import { addHours, format, parseISO } from 'date-fns';
-import { omitBy } from 'lodash';
+import { isEmpty, omitBy } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
 import { fetchExchangeRate } from '@/lib/currency';
 import { createLoader } from '@/lib/dataloader';
+import { getObjectDiff } from '@/lib/diff';
 import type { IContext } from '@/lib/types';
 import { Audit } from '../audit';
 import type { Space } from '../space';
@@ -186,40 +187,54 @@ export class TransactionLedger {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
-        const payload = {
-          concept: parsedData.concept,
-          description:
-            (parsedData.description ?? '') !== ''
-              ? parsedData.description
-              : null,
+        const query = trx<TransactionLedger>('transaction_ledger')
+          .where({ id: parsedData.id })
+          .limit(1);
 
-          original_currency: parsedData.currency,
-          currency: parsedData.currency,
+        const transactionToUpdate = assertNotNull(
+          await query.first(),
+          'Transaction not found',
+        );
 
-          original_amount_cents: parsedData.amount_cents,
-          amount_cents: parsedData.amount_cents,
+        const payload = getObjectDiff(
+          transactionToUpdate as unknown as Record<string, unknown>,
+          {
+            concept: parsedData.concept,
+            description:
+              (parsedData.description ?? '') !== ''
+                ? parsedData.description
+                : null,
 
-          transacted_at: parsedData.transacted_at,
-          type: parsedData.type,
+            original_currency: parsedData.currency,
+            currency: parsedData.currency,
 
-          category_id: parsedData.category_id,
-        };
+            original_amount_cents: parsedData.amount_cents,
+            amount_cents: parsedData.amount_cents,
 
-        const [transaction] = await trx<TransactionLedger>('transaction_ledger')
-          .update(payload, '*')
-          .where({
-            id: args.data.id,
-          });
+            transacted_at: parsedData.transacted_at,
+            type: parsedData.type,
+
+            category_id: parsedData.category_id,
+          },
+        );
+
+        if (isEmpty(payload) === true) {
+          return {
+            transaction: transactionToUpdate,
+          };
+        }
+
+        const transaction = assertNotNull(
+          (await query.update(payload, '*')).at(0),
+          'Transaction could not be update',
+        );
 
         await Audit.log({
           trx,
           context: args.context,
           data: {
             object: 'transaction_ledger',
-            object_id: assertNotNull(
-              transaction?.id,
-              'Transaction could not be updated',
-            ),
+            object_id: transaction.id,
             operation: 'update',
             payload,
           },

@@ -67,9 +67,11 @@ export class ExchangeRate {
       'Exchange rate not found',
     );
 
-    return {
-      ...rate,
-      rate_cents: Number(rate.rate_cents),
-    };
+    return rate != null
+      ? {
+          ...rate,
+          rate_cents: Number(rate.rate_cents),
+        }
+      : null;
   }
 }
