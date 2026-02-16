@@ -136,7 +136,9 @@ export default function HistoryPage() {
         concept?: string;
         description?: string;
         currency?: z.infer<typeof CurrencyEnum>;
+        original_currency?: z.infer<typeof CurrencyEnum>;
         amount_cents?: number;
+        original_amount_cents?: number;
         transacted_at?: string;
         type?: z.infer<typeof TypeEnum>;
 
@@ -158,7 +160,9 @@ export default function HistoryPage() {
             concept
             description
             currency
+            original_currency
             amount_cents
+            original_amount_cents
             transacted_at
             type
 
@@ -364,10 +368,10 @@ export default function HistoryPage() {
     () => ({
       concept: transactionEditing?.concept ?? '',
       description: transactionEditing?.description ?? '',
-      currency: transactionEditing?.currency ?? CurrencyEnum.enum.COP,
+      currency: transactionEditing?.original_currency ?? CurrencyEnum.enum.COP,
       amount:
-        transactionEditing?.amount_cents != null
-          ? (transactionEditing?.amount_cents / 100).toFixed(2)
+        transactionEditing?.original_amount_cents != null
+          ? (transactionEditing?.original_amount_cents / 100).toFixed(2)
           : '',
       transacted_at: (transactionEditing?.transacted_at != null
         ? new Date(`${transactionEditing.transacted_at}T12:00:00.000Z`)
