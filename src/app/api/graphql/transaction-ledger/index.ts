@@ -86,7 +86,11 @@ export const resolvers = {
         (transaction) => transaction?.currency,
       ),
 
-    original_currency: (parent: { id: string }, _args: never, context: IContext) =>
+    original_currency: (
+      parent: { id: string },
+      _args: never,
+      context: IContext,
+    ) =>
       TransactionLedger.gen({ context, id: parent.id }).then(
         (transaction) => transaction?.original_currency,
       ),

@@ -21,8 +21,13 @@ describe('TransactionLedger GraphQL type extension (integration)', () => {
     const user = await createUser(context.services.knex);
     const testContext = context.login(user);
 
-    const space = await createSpace(context.services.knex, { user_id: user.id });
-    const category = await createCategory(context.services.knex, { user_id: user.id, space_id: space.id });
+    const space = await createSpace(context.services.knex, {
+      user_id: user.id,
+    });
+    const category = await createCategory(context.services.knex, {
+      user_id: user.id,
+      space_id: space.id,
+    });
 
     const transaction = await createTransactionLedger(context.services.knex, {
       user_id: user.id,
@@ -42,19 +47,33 @@ describe('TransactionLedger GraphQL type extension (integration)', () => {
 
     const edges = result.edges;
     expect(edges.length).toBe(1);
-    
-    // We need to resolve the fields. Since we are testing the resolvers directly, 
+
+    // We need to resolve the fields. Since we are testing the resolvers directly,
     // we need to call the resolvers for the specific fields on the returned object.
-    
+
     const gqlTransaction = edges[0];
-    
-    const amountCents = await resolvers.TransactionLedger.amount_cents(gqlTransaction, {}, testContext);
+
+    const amountCents = await resolvers.TransactionLedger.amount_cents(
+      gqlTransaction,
+      {},
+      testContext,
+    );
     expect(typeof amountCents).toBe('number');
 
     // @ts-expect-error - These fields don't exist yet in the types
-    const originalAmountCents = await resolvers.TransactionLedger.original_amount_cents(gqlTransaction, {}, testContext);
+    const originalAmountCents =
+      await resolvers.TransactionLedger.original_amount_cents(
+        gqlTransaction,
+        {},
+        testContext,
+      );
     // @ts-expect-error - These fields don't exist yet in the types
-    const originalCurrency = await resolvers.TransactionLedger.original_currency(gqlTransaction, {}, testContext);
+    const originalCurrency =
+      await resolvers.TransactionLedger.original_currency(
+        gqlTransaction,
+        {},
+        testContext,
+      );
 
     expect(originalAmountCents).toBe(10000);
     expect(originalCurrency).toBe('USD');

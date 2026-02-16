@@ -196,16 +196,17 @@ export class TransactionLedger {
           'Transaction not found',
         );
 
-        const amountCents =
-          parsedData.currency !== 'COP'
-            ? Math.round(
-                parsedData.amount_cents *
-                  (await fetchExchangeRate(args.context, 'USDCOP')),
-              )
-            : parsedData.amount_cents;
-
-        const payload = getObjectDiff(
-          transactionToUpdate as unknown as Record<string, unknown>,
+        const diff = getObjectDiff(
+          {
+            ...transactionToUpdate,
+            original_amount_cents: parseInt(
+              transactionToUpdate.original_amount_cents.toString(),
+              10,
+            ),
+            transacted_at: new Date(
+              transactionToUpdate.transacted_at,
+            ).toISOString(),
+          },
           {
             concept: parsedData.concept,
             description:
@@ -217,7 +218,6 @@ export class TransactionLedger {
             currency: 'COP',
 
             original_amount_cents: parsedData.amount_cents,
-            amount_cents: amountCents,
 
             transacted_at: parsedData.transacted_at,
             type: parsedData.type,
@@ -225,6 +225,21 @@ export class TransactionLedger {
             category_id: parsedData.category_id,
           },
         );
+
+        const amountCents =
+          'original_currency' in diff || 'original_amount_cents' in diff
+            ? parsedData.currency === 'USD'
+              ? Math.round(
+                  parsedData.amount_cents *
+                    (await fetchExchangeRate(args.context, 'USDCOP')),
+                )
+              : parsedData.amount_cents
+            : null;
+
+        const payload = {
+          ...diff,
+          ...(amountCents != null ? { amount_cents: amountCents } : {}),
+        };
 
         if (isEmpty(payload) === true) {
           return {
