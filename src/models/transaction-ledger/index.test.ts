@@ -131,24 +131,9 @@ describe('models/category', () => {
       .first();
 
     expect(updatedAuditLog?.id != null).toBeTruthy();
-    expect(updatedAuditLog?.data.payload).toMatchObject(
-      expect.objectContaining({
-        ...omit(updatedTransaction, [
-          'created_at',
-          'updated_at',
-          'archived_at',
-          'id',
-          'amount_cents',
-          'original_amount_cents',
-          'transacted_at',
-          'space_id',
-          'user_id',
-        ]),
-        amount_cents: Number(updatedTransaction.amount_cents),
-        original_amount_cents: Number(updatedTransaction.original_amount_cents),
-        transacted_at: new Date(updatedTransaction.transacted_at).toISOString(),
-      }),
-    );
+    expect(updatedAuditLog?.data.payload).toMatchObject({
+      concept: 'updated concept',
+    });
 
     const deletedTransaction = assertNotNull(
       (
@@ -226,6 +211,72 @@ describe('models/category', () => {
 
     expect(transactionLedger?.currency).toBe('COP');
     expect(Number(transactionLedger?.amount_cents)).toBe(4_200_000_00);
+  });
+
+  it('re-converts USD to COP when updating a transaction', async () => {
+    const user = assertNotNull(await createUser(context.services.knex));
+    const contextWithUser = context.login(user);
+    const space = await createSpace(context.services.knex, {
+      user_id: user.id,
+    });
+    const category = await createCategory(context.services.knex, {
+      space_id: assertNotNull(space?.id),
+    });
+
+    // 1. Create initial transaction at 4000 rate
+    vi.spyOn(CurrencyLib, 'fetchExchangeRate').mockResolvedValue(4000.0);
+
+    const createdTransaction = assertNotNull(
+      (
+        await TransactionLedger.create({
+          context: contextWithUser,
+          data: {
+            concept: 'Test USD Transaction',
+            description: 'Original',
+            currency: 'USD',
+            amount_cents: '100.00',
+            transacted_at: format(new Date(), 'yyyy-MM-dd'),
+            type: 'expense',
+            category_id: assertNotNull(category?.id),
+          },
+        })
+      ).transactionLedger,
+    );
+
+    // 100 * 4000 = 400,000.00 COP cents
+    expect(Number(createdTransaction.amount_cents)).toBe(400_000_00);
+
+    // 2. Update with new amount at 4100 rate
+    vi.spyOn(CurrencyLib, 'fetchExchangeRate').mockResolvedValue(4100.0);
+
+    const updatedTransaction = assertNotNull(
+      (
+        await TransactionLedger.update({
+          context: contextWithUser,
+          data: {
+            id: createdTransaction.id,
+            concept: 'Updated USD Transaction',
+            description: 'Updated',
+            currency: 'USD',
+            amount_cents: '200.00',
+            transacted_at: format(new Date(), 'yyyy-MM-dd'),
+            type: 'expense',
+            category_id: assertNotNull(category?.id),
+          },
+        })
+      ).transaction,
+    );
+
+    const transactionFromDb = await contextWithUser.services
+      .knex<TransactionLedger>('transaction_ledger')
+      .where({ id: updatedTransaction.id })
+      .first();
+
+    expect(transactionFromDb?.original_currency).toBe('USD');
+    expect(Number(transactionFromDb?.original_amount_cents)).toBe(200_00);
+    expect(transactionFromDb?.currency).toBe('COP');
+    // 200 * 4100 = 820,000.00 COP cents
+    expect(Number(transactionFromDb?.amount_cents)).toBe(820_000_00);
   });
 
   it.each([

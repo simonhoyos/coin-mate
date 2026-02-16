@@ -196,6 +196,14 @@ export class TransactionLedger {
           'Transaction not found',
         );
 
+        const amountCents =
+          parsedData.currency !== 'COP'
+            ? Math.round(
+                parsedData.amount_cents *
+                  (await fetchExchangeRate(args.context, 'USDCOP')),
+              )
+            : parsedData.amount_cents;
+
         const payload = getObjectDiff(
           transactionToUpdate as unknown as Record<string, unknown>,
           {
@@ -206,10 +214,10 @@ export class TransactionLedger {
                 : null,
 
             original_currency: parsedData.currency,
-            currency: parsedData.currency,
+            currency: 'COP',
 
             original_amount_cents: parsedData.amount_cents,
-            amount_cents: parsedData.amount_cents,
+            amount_cents: amountCents,
 
             transacted_at: parsedData.transacted_at,
             type: parsedData.type,
@@ -373,7 +381,9 @@ const getTransactionLedgerById = createLoader(
         'transaction_ledger.concept',
         'transaction_ledger.description',
         'transaction_ledger.currency',
+        'transaction_ledger.original_currency',
         'transaction_ledger.amount_cents',
+        'transaction_ledger.original_amount_cents',
         'transaction_ledger.transacted_at',
         'transaction_ledger.type',
 
@@ -388,7 +398,9 @@ const getTransactionLedgerById = createLoader(
       | 'concept'
       | 'description'
       | 'currency'
+      | 'original_currency'
       | 'amount_cents'
+      | 'original_amount_cents'
       | 'transacted_at'
       | 'type'
       | 'category_id'

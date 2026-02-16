@@ -10,7 +10,9 @@ export const typeDefs = `#graphql
     concept: String
     description: String
     currency: String
+    original_currency: String
     amount_cents: Int
+    original_amount_cents: Int
     transacted_at: String
     type: String
 
@@ -84,9 +86,27 @@ export const resolvers = {
         (transaction) => transaction?.currency,
       ),
 
-    amount_cents: (parent: { id: string }, _args: never, context: IContext) =>
+    original_currency: (parent: { id: string }, _args: never, context: IContext) =>
       TransactionLedger.gen({ context, id: parent.id }).then(
-        (transaction) => transaction?.amount_cents,
+        (transaction) => transaction?.original_currency,
+      ),
+
+    amount_cents: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then((transaction) =>
+        transaction?.amount_cents != null
+          ? Number(transaction.amount_cents)
+          : undefined,
+      ),
+
+    original_amount_cents: (
+      parent: { id: string },
+      _args: never,
+      context: IContext,
+    ) =>
+      TransactionLedger.gen({ context, id: parent.id }).then((transaction) =>
+        transaction?.original_amount_cents != null
+          ? Number(transaction.original_amount_cents)
+          : undefined,
       ),
 
     transacted_at: (parent: { id: string }, _args: never, context: IContext) =>
