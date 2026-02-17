@@ -3,12 +3,7 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  IconCirclePlus,
-  IconFolderCode,
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { groupBy } from 'lodash';
 import { ChevronDownIcon } from 'lucide-react';
@@ -17,6 +12,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { TransactionCard } from '@/components/transaction-card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -563,58 +559,18 @@ export default function HistoryPage() {
                   <h2 className="font-semibold text-lg">{groupDate}</h2>
 
                   {transactionList.map((transaction) => (
-                    <div
+                    <TransactionCard
                       key={transaction.id}
-                      className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
-                    >
-                      {
-                        <p className="text-xs text-gray-800">
-                          {transaction.category?.name} ({transaction.type})
-                        </p>
-                      }
-                      <div className="flex justify-between w-full">
-                        <div className="flex flex-col gap-2">
-                          <h2 className="font-bold">{transaction.concept}</h2>
-                          {(transaction.description ?? '') !== '' && (
-                            <p>{transaction.description}</p>
-                          )}
-                        </div>
-                        <div>
-                          <p>
-                            {moneyFormatter.format(
-                              (transaction.amount_cents ?? 0) / 100,
-                            )}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button type="button" variant="ghost" asChild>
-                            <Link
-                              href={createQueryString({
-                                appendKeys: {
-                                  [EDIT_TRANSACTION_QUERY_PARAM]:
-                                    transaction.id,
-                                },
-                                omitKeys: [CREATE_TRANSACTION_QUERY_PARAM],
-                              })}
-                            >
-                              <IconPencil />
-                              <span className="sr-only">Edit transaction</span>
-                            </Link>
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() =>
-                              setDeletingTransactionId(transaction.id)
-                            }
-                          >
-                            <IconTrash className="text-destructive" />
-                            <span className="sr-only">Delete transaction</span>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                      transaction={transaction}
+                      moneyFormatter={moneyFormatter}
+                      onDeleteClick={(id) => setDeletingTransactionId(id)}
+                      editHref={createQueryString({
+                        appendKeys: {
+                          [EDIT_TRANSACTION_QUERY_PARAM]: transaction.id,
+                        },
+                        omitKeys: [CREATE_TRANSACTION_QUERY_PARAM],
+                      })}
+                    />
                   ))}
                 </section>
               ),

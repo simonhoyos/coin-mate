@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { assertNotNull } from '@/lib/assert';
 import { createTestContext, type ITestContext } from '@/lib/testing/context.js';
 import { createCategory } from '@/lib/testing/factories/category';
 import { createSpace } from '@/lib/testing/factories/space';
@@ -21,21 +22,26 @@ describe('TransactionLedger GraphQL type extension (integration)', () => {
     const user = await createUser(context.services.knex);
     const testContext = context.login(user);
 
-    const space = await createSpace(context.services.knex, {
-      user_id: user.id,
-    });
-    const category = await createCategory(context.services.knex, {
-      user_id: user.id,
-      space_id: space.id,
-    });
+    const space = assertNotNull(
+      await createSpace(context.services.knex, {
+        user_id: user.id,
+      }),
+    );
 
-    const transaction = await createTransactionLedger(context.services.knex, {
+    const category = assertNotNull(
+      await createCategory(context.services.knex, {
+        user_id: user.id,
+        space_id: space.id,
+      }),
+    );
+
+    await createTransactionLedger(context.services.knex, {
       user_id: user.id,
       category_id: category.id,
       space_id: space.id,
-      original_amount_cents: 10000, // 100.00
+      original_amount_cents: 10000,
       original_currency: 'USD',
-      amount_cents: 400000, // Assuming 4000 rate for COP
+      amount_cents: 400000,
       currency: 'COP',
     });
 
@@ -46,32 +52,30 @@ describe('TransactionLedger GraphQL type extension (integration)', () => {
     );
 
     const edges = result.edges;
+
     expect(edges.length).toBe(1);
 
-    // We need to resolve the fields. Since we are testing the resolvers directly,
-    // we need to call the resolvers for the specific fields on the returned object.
-
-    const gqlTransaction = edges[0];
+    const transaction = assertNotNull(edges[0]);
 
     const amountCents = await resolvers.TransactionLedger.amount_cents(
-      gqlTransaction,
-      {},
+      { id: transaction.id },
+      null as never,
       testContext,
     );
+
     expect(typeof amountCents).toBe('number');
 
-    // @ts-expect-error - These fields don't exist yet in the types
     const originalAmountCents =
       await resolvers.TransactionLedger.original_amount_cents(
-        gqlTransaction,
-        {},
+        transaction,
+        null as never,
         testContext,
       );
-    // @ts-expect-error - These fields don't exist yet in the types
+
     const originalCurrency =
       await resolvers.TransactionLedger.original_currency(
-        gqlTransaction,
-        {},
+        transaction,
+        null as never,
         testContext,
       );
 
