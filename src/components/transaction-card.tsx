@@ -1,10 +1,7 @@
 'use client';
 
-import {
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react';
-import { motion, useAnimation, PanInfo } from 'framer-motion';
+import { IconPencil, IconTrash } from '@tabler/icons-react';
+import { motion, type PanInfo, useAnimation } from 'framer-motion';
 import Link from 'next/link';
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -40,24 +37,16 @@ export function TransactionCard({
   const controls = useAnimation();
   const [isSwipedOpen, setIsSwipedOpen] = React.useState(false);
 
-  const ACTIONS_WIDTH = 160; // Total width of Edit + Delete buttons
-  const FULL_SWIPE_THRESHOLD = 250;
+  const ACTIONS_WIDTH = 160;
 
-  const handlePanEnd = async (_: any, info: PanInfo) => {
+  const handlePanEnd = async (_: never, info: PanInfo) => {
     const offset = info.offset.x;
     const velocity = info.velocity.x;
 
-    if (offset < -FULL_SWIPE_THRESHOLD || velocity < -500) {
-      // Full swipe to delete
-      onDeleteClick(transaction.id);
-      controls.start({ x: 0 });
-      setIsSwipedOpen(false);
-    } else if (offset < -ACTIONS_WIDTH / 2 || velocity < -100) {
-      // Snap open to show actions
+    if (offset < -ACTIONS_WIDTH / 2 || velocity < -100) {
       await controls.start({ x: -ACTIONS_WIDTH });
       setIsSwipedOpen(true);
     } else {
-      // Snap back closed
       await controls.start({ x: 0 });
       setIsSwipedOpen(false);
     }
@@ -65,12 +54,11 @@ export function TransactionCard({
 
   return (
     <div className="relative overflow-hidden rounded border shadow-xs group bg-muted">
-      {/* Actions Layer (Revealed on Swipe/Hover) */}
       <div className="absolute inset-0 flex justify-end items-stretch">
         <div className="flex w-[160px]">
-          <Button 
-            type="button" 
-            variant="ghost" 
+          <Button
+            type="button"
+            variant="ghost"
             asChild
             className="h-full rounded-none flex-1 px-0 flex flex-col gap-1 items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
           >
@@ -83,7 +71,7 @@ export function TransactionCard({
             type="button"
             variant="ghost"
             onClick={() => onDeleteClick(transaction.id)}
-            className="h-full rounded-none flex-1 px-0 flex flex-col gap-1 items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors"
+            className="bg-destructive text-white h-full rounded-none flex-1 px-0 flex flex-col gap-1 items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors"
           >
             <IconTrash size={20} />
             <span className="text-xs font-medium">Delete</span>
@@ -91,7 +79,6 @@ export function TransactionCard({
         </div>
       </div>
 
-      {/* Main Card Layer */}
       <motion.div
         drag="x"
         dragConstraints={{ left: -1000, right: 0 }}
@@ -103,7 +90,6 @@ export function TransactionCard({
           if (!isSwipedOpen) {
             setIsExpanded(!isExpanded);
           } else {
-            // Close actions if tapped while open
             controls.start({ x: 0 });
             setIsSwipedOpen(false);
           }
@@ -124,7 +110,7 @@ export function TransactionCard({
         </div>
 
         {isExpanded && (transaction.description ?? '') !== '' && (
-          <motion.p 
+          <motion.p
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             className="text-sm text-muted-foreground mt-2 pointer-events-none overflow-hidden"
@@ -132,11 +118,10 @@ export function TransactionCard({
             {transaction.description}
           </motion.p>
         )}
-        
-        {/* Desktop Hover Hint */}
+
         <div className="absolute right-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex gap-1 pointer-events-none">
-           <IconPencil size={14} className="text-muted-foreground" />
-           <IconTrash size={14} className="text-destructive/50" />
+          <IconPencil size={14} className="text-muted-foreground" />
+          <IconTrash size={14} className="text-destructive/50" />
         </div>
       </motion.div>
     </div>

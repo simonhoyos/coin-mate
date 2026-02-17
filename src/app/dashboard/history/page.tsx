@@ -3,12 +3,7 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  IconCirclePlus,
-  IconFolderCode,
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { groupBy } from 'lodash';
 import { ChevronDownIcon } from 'lucide-react';
@@ -17,6 +12,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { TransactionCard } from '@/components/transaction-card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -55,7 +51,6 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TransactionCard } from '@/components/transaction-card';
 import { cn } from '@/lib/utils';
 
 const CurrencyEnum = z.enum(['COP', 'USD'], 'Currency must be COP or USD');

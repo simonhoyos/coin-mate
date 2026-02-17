@@ -1,29 +1,37 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import type React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { assertNotNull } from '@/lib/assert';
 import { TransactionCard } from './transaction-card';
-import React from 'react';
 
-// Mocking Link since it requires a Router context
 vi.mock('next/link', () => {
   return {
-    default: ({ children, href }: { children: React.ReactNode; href: string }) => (
-      <a href={href}>{children}</a>
-    ),
+    default: ({
+      children,
+      href,
+    }: {
+      children: React.ReactNode;
+      href: string;
+    }) => <a href={href}>{children}</a>,
   };
 });
 
-// Mock framer-motion to simplify testing gestures if needed, 
-// but we can also test the initial states
 vi.mock('framer-motion', async (importOriginal) => {
   const actual = await importOriginal<typeof import('framer-motion')>();
   return {
     ...actual,
     motion: {
       ...actual.motion,
-      div: ({ children, onClick, ...props }: any) => (
-        <div onClick={onClick} {...props}>{children}</div>
+      div: ({
+        children,
+        onClick,
+        ...props
+      }: React.ComponentProps<'button'>) => (
+        <button onClick={onClick} {...props}>
+          {children}
+        </button>
       ),
-      p: ({ children, ...props }: any) => (
+      p: ({ children, ...props }: React.ComponentProps<'p'>) => (
         <p {...props}>{children}</p>
       ),
     },
@@ -62,7 +70,7 @@ describe('TransactionCard', () => {
         moneyFormatter={mockMoneyFormatter}
         editHref="/edit"
         onDeleteClick={mockOnDelete}
-      />
+      />,
     );
 
     expect(screen.getByText('Test Concept')).toBeDefined();
@@ -76,11 +84,13 @@ describe('TransactionCard', () => {
         moneyFormatter={mockMoneyFormatter}
         editHref="/edit"
         onDeleteClick={mockOnDelete}
-      />
+      />,
     );
 
-    const concept = screen.getByText('Test Concept');
-    fireEvent.click(concept.parentElement?.parentElement!); // Click the motion.div
+    const parentElement = assertNotNull(
+      screen.getByText('Test Concept').parentElement?.parentElement,
+    );
+    fireEvent.click(parentElement);
 
     expect(screen.getByText('Test Description')).toBeDefined();
   });
@@ -92,16 +102,16 @@ describe('TransactionCard', () => {
         moneyFormatter={mockMoneyFormatter}
         editHref="/edit"
         onDeleteClick={mockOnDelete}
-      />
+      />,
     );
 
     const concept = screen.getByText('Test Concept');
-    const card = concept.parentElement?.parentElement!;
-    
-    fireEvent.click(card); // Expand
+    const card = assertNotNull(concept.parentElement?.parentElement);
+
+    fireEvent.click(card);
     expect(screen.getByText('Test Description')).toBeDefined();
 
-    fireEvent.click(card); // Collapse
+    fireEvent.click(card);
     expect(screen.queryByText('Test Description')).toBeNull();
   });
 
@@ -112,7 +122,7 @@ describe('TransactionCard', () => {
         moneyFormatter={mockMoneyFormatter}
         editHref="/edit"
         onDeleteClick={mockOnDelete}
-      />
+      />,
     );
 
     const deleteButton = screen.getByRole('button', { name: /delete/i });
