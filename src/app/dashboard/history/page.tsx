@@ -55,6 +55,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TransactionCard } from '@/components/transaction-card';
 import { cn } from '@/lib/utils';
 
 const CurrencyEnum = z.enum(['COP', 'USD'], 'Currency must be COP or USD');
@@ -563,58 +564,18 @@ export default function HistoryPage() {
                   <h2 className="font-semibold text-lg">{groupDate}</h2>
 
                   {transactionList.map((transaction) => (
-                    <div
+                    <TransactionCard
                       key={transaction.id}
-                      className="px-4 py-6 border rounded shadow-xs flex flex-col gap-2"
-                    >
-                      {
-                        <p className="text-xs text-gray-800">
-                          {transaction.category?.name} ({transaction.type})
-                        </p>
-                      }
-                      <div className="flex justify-between w-full">
-                        <div className="flex flex-col gap-2">
-                          <h2 className="font-bold">{transaction.concept}</h2>
-                          {(transaction.description ?? '') !== '' && (
-                            <p>{transaction.description}</p>
-                          )}
-                        </div>
-                        <div>
-                          <p>
-                            {moneyFormatter.format(
-                              (transaction.amount_cents ?? 0) / 100,
-                            )}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button type="button" variant="ghost" asChild>
-                            <Link
-                              href={createQueryString({
-                                appendKeys: {
-                                  [EDIT_TRANSACTION_QUERY_PARAM]:
-                                    transaction.id,
-                                },
-                                omitKeys: [CREATE_TRANSACTION_QUERY_PARAM],
-                              })}
-                            >
-                              <IconPencil />
-                              <span className="sr-only">Edit transaction</span>
-                            </Link>
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() =>
-                              setDeletingTransactionId(transaction.id)
-                            }
-                          >
-                            <IconTrash className="text-destructive" />
-                            <span className="sr-only">Delete transaction</span>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                      transaction={transaction}
+                      moneyFormatter={moneyFormatter}
+                      onDeleteClick={(id) => setDeletingTransactionId(id)}
+                      editHref={createQueryString({
+                        appendKeys: {
+                          [EDIT_TRANSACTION_QUERY_PARAM]: transaction.id,
+                        },
+                        omitKeys: [CREATE_TRANSACTION_QUERY_PARAM],
+                      })}
+                    />
                   ))}
                 </section>
               ),
