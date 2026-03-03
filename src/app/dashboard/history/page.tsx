@@ -481,40 +481,42 @@ export default function HistoryPage() {
   return (
     <>
       <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h1>History</h1>
-          <Button type="button" variant="outline" asChild>
-            <Link
-              href={createQueryString({
-                appendKeys: {
-                  [CREATE_TRANSACTION_QUERY_PARAM]: 'true',
-                },
-                omitKeys: [EDIT_TRANSACTION_QUERY_PARAM],
-              })}
-            >
-              <IconCirclePlus />
-              <span>Create transactions</span>
-            </Link>
-          </Button>
-        </div>
+        <div className="sticky top-(--header-height) z-40 bg-background/95 backdrop-blur-sm -mx-4 px-4 md:-mx-6 md:px-6 py-4 border-b flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <h1>History</h1>
+            <Button type="button" variant="outline" asChild>
+              <Link
+                href={createQueryString({
+                  appendKeys: {
+                    [CREATE_TRANSACTION_QUERY_PARAM]: 'true',
+                  },
+                  omitKeys: [EDIT_TRANSACTION_QUERY_PARAM],
+                })}
+              >
+                <IconCirclePlus />
+                <span>Create transactions</span>
+              </Link>
+            </Button>
+          </div>
 
-        <Tabs
-          value={currentType}
-          onValueChange={(value) =>
-            router.push(
-              createQueryString({
-                appendKeys: {
-                  type: value,
-                },
-              }),
-            )
-          }
-        >
-          <TabsList>
-            <TabsTrigger value="expense">Expenses</TabsTrigger>
-            <TabsTrigger value="income">Incomes</TabsTrigger>
-          </TabsList>
-        </Tabs>
+          <Tabs
+            value={currentType}
+            onValueChange={(value) =>
+              router.push(
+                createQueryString({
+                  appendKeys: {
+                    type: value,
+                  },
+                }),
+              )
+            }
+          >
+            <TabsList>
+              <TabsTrigger value="expense">Expenses</TabsTrigger>
+              <TabsTrigger value="income">Incomes</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         {transactionListQuery.loading === true &&
         transactionListData.length === 0 ? (
