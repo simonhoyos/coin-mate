@@ -10,6 +10,7 @@ import {
   resolvers as categoryResolvers,
   typeDefs as categoryTypeDefs,
 } from './category';
+import { resolvers as spaceResolvers, typeDefs as spaceTypeDefs } from './space';
 import {
   resolvers as transactionLedgerResolvers,
   typeDefs as transactionLedgerTypeDefs,
@@ -33,11 +34,13 @@ const server = new ApolloServer<IContext>({
     baseTypeDefs,
     userTypeDefs,
     categoryTypeDefs,
+    spaceTypeDefs,
     transactionLedgerTypeDefs,
   ].flat(),
   resolvers: merge(
     userResolvers,
     categoryResolvers,
+    spaceResolvers,
     transactionLedgerResolvers,
   ),
   plugins: [
