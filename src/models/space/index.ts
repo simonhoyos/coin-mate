@@ -1,6 +1,7 @@
 import type { Knex } from 'knex';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
+import { createLoader } from '@/lib/dataloader';
 import type { IContext } from '@/lib/types';
 import { Audit } from '../audit';
 
@@ -16,6 +17,15 @@ export class Space {
   user_id!: string;
 
   archived_at?: Date | string | null;
+
+  static async gen(args: { context: IContext; id: string }) {
+    const record = await getSpaceById({
+      context: args.context,
+      id: args.id,
+    });
+
+    return record ?? null;
+  }
 
   static async create(args: {
     trx: Knex.Transaction;
@@ -122,3 +132,25 @@ const SpaceUserCreateSchema = z.object({
   userId: z.uuid(),
   role: z.enum(['admin']),
 });
+
+const getSpaceById = createLoader(
+  async (args: { context: IContext; keys: readonly string[] }) => {
+    const spaces = (await args.context.services
+      .knex<Space>('space')
+      .select([
+        'space.id',
+        'space.name',
+        'space.description',
+        'space.created_at',
+      ])
+      .whereIn('space.id', args.keys)
+      .whereNull('space.archived_at')) as unknown as Pick<
+      Space,
+      'id' | 'name' | 'description' | 'created_at'
+    >[];
+
+    return args.keys.map(
+      (key) => spaces.find((space) => space.id === key) ?? null,
+    );
+  },
+);

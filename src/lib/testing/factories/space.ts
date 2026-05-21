@@ -18,5 +18,13 @@ export async function createSpace(
 
   const [space] = await knex<Space>('space').insert(payload, '*');
 
+  if (space != null) {
+    await knex('space_user').insert({
+      space_id: space.id,
+      user_id: space.user_id,
+      role: 'admin',
+    });
+  }
+
   return space;
 }

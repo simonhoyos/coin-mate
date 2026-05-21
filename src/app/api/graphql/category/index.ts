@@ -41,7 +41,7 @@ export const typeDefs = `#graphql
   }
 
   extend type Query {
-    categoryList: CategoryConnection
+    categoryList(space_id: UUID): CategoryConnection
   }
 
   extend type Mutation {
@@ -77,18 +77,25 @@ export const resolvers = {
   },
 
   Query: {
-    async categoryList(_parent: never, _args: never, context: IContext) {
+    async categoryList(
+      _parent: never,
+      args: { space_id?: string },
+      context: IContext,
+    ) {
       if (context.user == null) {
         throw new Error('Unauthorized');
       }
 
-      const categories = await context.services
-        .knex<Category>('category')
-        .where({
-          user_id: context.user.id,
-          archived_at: null,
-        })
-        .orderBy('name', 'asc');
+      const query = context.services.knex<Category>('category').where({
+        user_id: context.user.id,
+        archived_at: null,
+      });
+
+      if (args.space_id != null) {
+        query.where({ space_id: args.space_id });
+      }
+
+      const categories = await query.orderBy('name', 'asc');
 
       return {
         edges: compact(

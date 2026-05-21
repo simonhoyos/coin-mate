@@ -54,6 +54,7 @@ describe('TransactionCard', () => {
     amount_cents: 1000,
     type: 'expense',
     category: { id: 'cat1', name: 'Food' },
+    space: { id: 'space1', name: 'Personal' },
   };
 
   const mockMoneyFormatter = new Intl.NumberFormat('en-US', {

@@ -17,6 +17,8 @@ export const typeDefs = `#graphql
     type: String
 
     category: Category
+    space_id: UUID
+    space: Space
   }
 
   type TransactionLedgerConnection {
@@ -33,6 +35,7 @@ export const typeDefs = `#graphql
     type: String!
 
     category_id: UUID
+    space_id: UUID!
   }
 
   input TransactionLedgerUpdateInput {
@@ -46,6 +49,7 @@ export const typeDefs = `#graphql
     type: String!
 
     category_id: UUID
+    space_id: UUID!
   }
 
   input TransactionLedgerDeleteInput {
@@ -125,10 +129,22 @@ export const resolvers = {
         (transaction) => transaction?.type,
       ),
 
+    space_id: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then(
+        (transaction) => transaction?.space_id,
+      ),
+
     category: (parent: { id: string }, _args: never, context: IContext) =>
       TransactionLedger.gen({ context, id: parent.id }).then((transaction) =>
         transaction?.category_id != null
           ? { id: transaction.category_id }
+          : undefined,
+      ),
+
+    space: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then((transaction) =>
+        transaction?.space_id != null
+          ? { id: transaction.space_id }
           : undefined,
       ),
   },
@@ -201,6 +217,7 @@ export const resolvers = {
           transacted_at: string;
           type: string;
           category_id: string;
+          space_id: string;
         };
       },
       context: IContext,
@@ -229,6 +246,7 @@ export const resolvers = {
           transacted_at: string;
           type: string;
           category_id: string;
+          space_id: string;
         };
       },
       context: IContext,
