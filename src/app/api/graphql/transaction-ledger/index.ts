@@ -18,6 +18,7 @@ export const typeDefs = `#graphql
 
     category: Category
     space_id: UUID
+    space: Space
   }
 
   type TransactionLedgerConnection {
@@ -137,6 +138,13 @@ export const resolvers = {
       TransactionLedger.gen({ context, id: parent.id }).then((transaction) =>
         transaction?.category_id != null
           ? { id: transaction.category_id }
+          : undefined,
+      ),
+
+    space: (parent: { id: string }, _args: never, context: IContext) =>
+      TransactionLedger.gen({ context, id: parent.id }).then((transaction) =>
+        transaction?.space_id != null
+          ? { id: transaction.space_id }
           : undefined,
       ),
   },

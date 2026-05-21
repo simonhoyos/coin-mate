@@ -145,6 +145,12 @@ export default function HistoryPage() {
 
           name?: string;
         };
+
+        space?: {
+          id: string;
+
+          name?: string;
+        };
       }[];
       cursor?: string | null;
     };
@@ -166,6 +172,12 @@ export default function HistoryPage() {
             space_id
 
             category {
+              id
+
+              name
+            }
+
+            space {
               id
 
               name
