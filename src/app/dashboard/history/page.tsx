@@ -76,6 +76,7 @@ const TransactionLedgerFormSchema = z.object({
   transacted_at: z.string().min(1, 'Date is required'),
   type: TypeEnum,
   category_id: z.uuid('Select a valid category'),
+  space_id: z.uuid('Select a valid space'),
 });
 
 const moneyFormatter = new Intl.NumberFormat('en-US', {
@@ -267,6 +268,28 @@ export default function HistoryPage() {
 
   const categoryListData = categoryListQuery.data?.categoryList?.edges ?? [];
 
+  const spaceListQuery = useQuery<{
+    userSpaces?: {
+      edges?: {
+        id: string;
+        name?: string;
+      }[];
+    };
+  }>(
+    gql`
+      query UserSpacesQueryFromExpenses {
+        userSpaces {
+          edges {
+            id
+            name
+          }
+        }
+      }
+    `,
+  );
+
+  const spaceListData = spaceListQuery.data?.userSpaces?.edges ?? [];
+
   const [transactionLedgerCreateMutation, transactionLedgerCreateState] =
     useMutation<
       {
@@ -283,6 +306,7 @@ export default function HistoryPage() {
           transacted_at: string;
           type: string;
           category_id: string;
+          space_id: string;
         };
       }
     >(
@@ -312,6 +336,7 @@ export default function HistoryPage() {
           transacted_at: string;
           type: string;
           category_id: string;
+          space_id: string;
         };
       }
     >(
@@ -356,8 +381,9 @@ export default function HistoryPage() {
       type:
         currentType === 'income' ? TypeEnum.enum.income : TypeEnum.enum.expense,
       category_id: '',
+      space_id: spaceListData.at(0)?.id ?? '',
     }),
-    [currentType],
+    [currentType, spaceListData],
   );
 
   const transactionLedgerValues = React.useMemo(
@@ -379,8 +405,9 @@ export default function HistoryPage() {
           ? TypeEnum.enum.income
           : TypeEnum.enum.expense),
       category_id: transactionEditing?.category?.id ?? '',
+      space_id: spaceListData.at(0)?.id ?? '',
     }),
-    [transactionEditing, currentType],
+    [transactionEditing, currentType, spaceListData],
   );
 
   const transactionLedgerForm = useForm({
@@ -404,6 +431,7 @@ export default function HistoryPage() {
           transacted_at: format(data.transacted_at, 'yyyy-MM-dd'),
           type: data.type,
           category_id: data.category_id,
+          space_id: data.space_id,
         },
       },
     });
@@ -436,6 +464,7 @@ export default function HistoryPage() {
             transacted_at: data.transacted_at,
             type: data.type,
             category_id: data.category_id,
+            space_id: data.space_id,
           },
         },
       });
@@ -857,6 +886,35 @@ export default function HistoryPage() {
                   )}
                 />
               </div>
+              <Controller
+                name="space_id"
+                control={transactionLedgerForm.control}
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor="space_id">Space</FieldLabel>
+                    <Select
+                      {...field}
+                      aria-invalid={fieldState.invalid}
+                      onValueChange={field.onChange}
+                      disabled={spaceListData.length <= 1}
+                    >
+                      <SelectTrigger id="space_id">
+                        <SelectValue placeholder="Select a space" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {spaceListData.map((space) => (
+                          <SelectItem key={space.id} value={space.id}>
+                            {space.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
               <Field>
                 <div className="flex flex-1 gap-2">
                   <Button

@@ -69,6 +69,7 @@ describe('models/category', () => {
           data: {
             ...TRANSACTION_BASE_DATA,
             category_id: category.id,
+            space_id: space.id,
           },
         })
       ).transactionLedger,
@@ -111,6 +112,7 @@ describe('models/category', () => {
           data: {
             id: createdTransaction.id,
             category_id: category.id,
+            space_id: space.id,
             ...TRANSACTION_BASE_DATA,
             concept: 'updated concept',
           },
@@ -195,6 +197,7 @@ describe('models/category', () => {
             transacted_at: format(new Date(), 'yyyy-MM-dd'),
             type: 'expense',
             category_id: assertNotNull(category?.id),
+            space_id: assertNotNull(space?.id),
           },
         })
       ).transactionLedger,
@@ -238,6 +241,7 @@ describe('models/category', () => {
             transacted_at: format(new Date(), 'yyyy-MM-dd'),
             type: 'expense',
             category_id: assertNotNull(category?.id),
+            space_id: assertNotNull(space?.id),
           },
         })
       ).transactionLedger,
@@ -262,6 +266,7 @@ describe('models/category', () => {
             transacted_at: format(new Date(), 'yyyy-MM-dd'),
             type: 'expense',
             category_id: assertNotNull(category?.id),
+            space_id: assertNotNull(space?.id),
           },
         })
       ).transaction,
@@ -353,6 +358,7 @@ describe('models/category', () => {
           data: {
             // @ts-expect-error data validation inference error
             category_id: category.id,
+            space_id: space.id,
             ...data,
           },
         }),
@@ -373,6 +379,7 @@ describe('models/category', () => {
             id: transaction.id,
             // @ts-expect-error data validation inference error
             category_id: category.id,
+            space_id: space.id,
             ...data,
           },
         }),
@@ -421,6 +428,7 @@ describe('models/category', () => {
         data: {
           id: otherTransaction.id,
           category_id: otherCategory.id,
+          space_id: otherSpace.id,
           ...TRANSACTION_BASE_DATA,
         },
       }),
@@ -472,6 +480,7 @@ describe('models/category', () => {
         context,
         data: {
           category_id: category.id,
+          space_id: space.id,
           ...TRANSACTION_BASE_DATA,
         },
       }),
@@ -483,6 +492,7 @@ describe('models/category', () => {
         data: {
           id: transaction.id,
           category_id: category.id,
+          space_id: space.id,
           ...TRANSACTION_BASE_DATA,
         },
       }),

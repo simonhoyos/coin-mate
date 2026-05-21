@@ -10,7 +10,10 @@ import {
   resolvers as categoryResolvers,
   typeDefs as categoryTypeDefs,
 } from './category';
-import { resolvers as spaceResolvers, typeDefs as spaceTypeDefs } from './space';
+import {
+  resolvers as spaceResolvers,
+  typeDefs as spaceTypeDefs,
+} from './space';
 import {
   resolvers as transactionLedgerResolvers,
   typeDefs as transactionLedgerTypeDefs,

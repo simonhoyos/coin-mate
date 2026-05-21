@@ -33,6 +33,7 @@ export const typeDefs = `#graphql
     type: String!
 
     category_id: UUID
+    space_id: UUID!
   }
 
   input TransactionLedgerUpdateInput {
@@ -46,6 +47,7 @@ export const typeDefs = `#graphql
     type: String!
 
     category_id: UUID
+    space_id: UUID!
   }
 
   input TransactionLedgerDeleteInput {
@@ -201,6 +203,7 @@ export const resolvers = {
           transacted_at: string;
           type: string;
           category_id: string;
+          space_id: string;
         };
       },
       context: IContext,
@@ -229,6 +232,7 @@ export const resolvers = {
           transacted_at: string;
           type: string;
           category_id: string;
+          space_id: string;
         };
       },
       context: IContext,

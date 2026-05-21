@@ -7,7 +7,6 @@ import { createLoader } from '@/lib/dataloader';
 import { getObjectDiff } from '@/lib/diff';
 import type { IContext } from '@/lib/types';
 import { Audit } from '../audit';
-import type { Space } from '../space';
 import { User } from '../user';
 
 export class TransactionLedger {
@@ -53,6 +52,7 @@ export class TransactionLedger {
       type: string;
 
       category_id: string;
+      space_id: string;
     };
   }) {
     const userId = assertNotNull(
@@ -81,16 +81,17 @@ export class TransactionLedger {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
-        const space = assertNotNull(
-          await trx<Space>('space')
-            .select('space.id')
-            .where({
-              user_id: userId,
-            })
-            .limit(1)
-            .first(),
-          'Space not found for current user',
-        );
+        const spaceUser = await trx('space_user')
+          .where({
+            user_id: userId,
+            space_id: parsedData.space_id,
+          })
+          .whereNull('archived_at')
+          .first();
+
+        if (spaceUser == null) {
+          throw new Error('User is not a member of the selected space');
+        }
 
         const payload = omitBy(
           {
@@ -111,7 +112,7 @@ export class TransactionLedger {
 
             user_id: userId,
             category_id: parsedData.category_id,
-            space_id: space.id,
+            space_id: parsedData.space_id,
           },
           (value) => value == null,
         );
@@ -158,6 +159,7 @@ export class TransactionLedger {
       type: string;
 
       category_id: string;
+      space_id: string;
     };
   }) {
     const userId = assertNotNull(
@@ -187,6 +189,18 @@ export class TransactionLedger {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
+        const spaceUser = await trx('space_user')
+          .where({
+            user_id: userId,
+            space_id: parsedData.space_id,
+          })
+          .whereNull('archived_at')
+          .first();
+
+        if (spaceUser == null) {
+          throw new Error('User is not a member of the selected space');
+        }
+
         const query = trx<TransactionLedger>('transaction_ledger')
           .where({ id: parsedData.id })
           .limit(1);
@@ -223,6 +237,7 @@ export class TransactionLedger {
             type: parsedData.type,
 
             category_id: parsedData.category_id,
+            space_id: parsedData.space_id,
           },
         );
 
@@ -376,6 +391,7 @@ const TransactionLedgerCreateSchema = z.object({
     .pipe(z.iso.datetime()),
   type: TypeEnum,
   category_id: z.uuid(),
+  space_id: z.uuid(),
 });
 
 const TransactionLedgerUpdateSchema = TransactionLedgerCreateSchema.extend({
