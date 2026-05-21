@@ -420,6 +420,7 @@ const getTransactionLedgerById = createLoader(
 
         'transaction_ledger.category_id',
 
+        'transaction_ledger.space_id',
         'transaction_ledger.user_id',
       ])
       .whereIn('id', args.keys)
@@ -435,6 +436,7 @@ const getTransactionLedgerById = createLoader(
       | 'transacted_at'
       | 'type'
       | 'category_id'
+      | 'space_id'
       | 'user_id'
     >[];
 

@@ -138,6 +138,7 @@ export default function HistoryPage() {
         original_amount_cents?: number;
         transacted_at?: string;
         type?: z.infer<typeof TypeEnum>;
+        space_id?: string;
 
         category?: {
           id: string;
@@ -162,6 +163,7 @@ export default function HistoryPage() {
             original_amount_cents
             transacted_at
             type
+            space_id
 
             category {
               id
@@ -243,30 +245,6 @@ export default function HistoryPage() {
       (expense) => expense.id === editingTransactionId,
     );
   }, [editingTransactionId, transactionListData]);
-
-  const categoryListQuery = useQuery<{
-    categoryList?: {
-      edges?: {
-        id: string;
-
-        name?: string;
-      }[];
-    };
-  }>(
-    gql`
-      query CategoryListQueryFromExpenses {
-        categoryList {
-          edges {
-            id
-
-            name
-          }
-        }
-      }
-    `,
-  );
-
-  const categoryListData = categoryListQuery.data?.categoryList?.edges ?? [];
 
   const spaceListQuery = useQuery<{
     userSpaces?: {
@@ -405,7 +383,7 @@ export default function HistoryPage() {
           ? TypeEnum.enum.income
           : TypeEnum.enum.expense),
       category_id: transactionEditing?.category?.id ?? '',
-      space_id: spaceListData.at(0)?.id ?? '',
+      space_id: transactionEditing?.space_id ?? spaceListData.at(0)?.id ?? '',
     }),
     [transactionEditing, currentType, spaceListData],
   );
@@ -418,6 +396,37 @@ export default function HistoryPage() {
     reValidateMode: 'onBlur',
   });
 
+  const selectedSpaceId = transactionLedgerForm.watch('space_id');
+
+  const categoryListQuery = useQuery<{
+    categoryList?: {
+      edges?: {
+        id: string;
+
+        name?: string;
+      }[];
+    };
+  }>(
+    gql`
+      query CategoryListQueryFromExpenses($space_id: UUID) {
+        categoryList(space_id: $space_id) {
+          edges {
+            id
+
+            name
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        space_id: selectedSpaceId || undefined,
+      },
+      skip: !selectedSpaceId,
+    },
+  );
+
+  const categoryListData = categoryListQuery.data?.categoryList?.edges ?? [];
   async function transactionLedgerCreateSubmit(
     data: z.infer<typeof TransactionLedgerFormSchema>,
   ) {
@@ -686,6 +695,38 @@ export default function HistoryPage() {
                   </Field>
                 )}
               />
+              <Controller
+                name="space_id"
+                control={transactionLedgerForm.control}
+                render={({ field, fieldState }) => (
+                  <Field>
+                    <FieldLabel htmlFor="space_id">Space</FieldLabel>
+                    <Select
+                      {...field}
+                      aria-invalid={fieldState.invalid}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        transactionLedgerForm.setValue('category_id', '');
+                      }}
+                      disabled={spaceListData.length <= 1}
+                    >
+                      <SelectTrigger id="space_id">
+                        <SelectValue placeholder="Select a space" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {spaceListData.map((space) => (
+                          <SelectItem key={space.id} value={space.id}>
+                            {space.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
               <div className="flex gap-2">
                 <Controller
                   name="currency"
@@ -863,6 +904,7 @@ export default function HistoryPage() {
                         {...field}
                         aria-invalid={fieldState.invalid}
                         onValueChange={field.onChange}
+                        disabled={!transactionLedgerForm.watch('space_id')}
                       >
                         <SelectTrigger id="category_id">
                           <SelectValue placeholder="Select a category" />
@@ -886,35 +928,6 @@ export default function HistoryPage() {
                   )}
                 />
               </div>
-              <Controller
-                name="space_id"
-                control={transactionLedgerForm.control}
-                render={({ field, fieldState }) => (
-                  <Field>
-                    <FieldLabel htmlFor="space_id">Space</FieldLabel>
-                    <Select
-                      {...field}
-                      aria-invalid={fieldState.invalid}
-                      onValueChange={field.onChange}
-                      disabled={spaceListData.length <= 1}
-                    >
-                      <SelectTrigger id="space_id">
-                        <SelectValue placeholder="Select a space" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {spaceListData.map((space) => (
-                          <SelectItem key={space.id} value={space.id}>
-                            {space.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
               <Field>
                 <div className="flex flex-1 gap-2">
                   <Button
