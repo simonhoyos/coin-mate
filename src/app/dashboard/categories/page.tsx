@@ -4,15 +4,11 @@ import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogDescription } from '@radix-ui/react-dialog';
-import {
-  IconCirclePlus,
-  IconFolderCode,
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { CategoryCard } from '@/components/category-card';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -51,6 +47,12 @@ const CategoryUpdateFormSchema = z.object({
 
 export default function CategoriesPage() {
   const [open, setOpen] = React.useState(false);
+  const [editingCategoryId, setEditingCategoryId] = React.useState<
+    string | null
+  >(null);
+  const [deletingCategoryId, setDeletingCategoryId] = React.useState<
+    string | null
+  >(null);
 
   const categoryListQuery = useQuery<{
     categoryList?: {
@@ -243,31 +245,40 @@ export default function CategoriesPage() {
       ) : (
         <section className="flex flex-1 flex-col gap-4">
           {categoryListData.map((category) => (
-            <div
+            <CategoryCard
               key={category.id}
-              className="px-4 py-6 border rounded shadow-xs flex items-center justify-between"
-            >
-              <div className="flex flex-col gap-2">
-                <h2 className="font-bold capitalize">{category.name}</h2>
-                {(category.description ?? '') !== '' && (
-                  <p>{category.description}</p>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <CategoryUpdateAction
-                  id={category.id}
-                  name={category.name}
-                  description={category.description}
-                  refetch={categoryListQuery.refetch}
-                />
-                <CategoryDeleteAction
-                  id={category.id}
-                  refetch={categoryListQuery.refetch}
-                />
-              </div>
-            </div>
+              category={category}
+              onEditClick={(id) => setEditingCategoryId(id)}
+              onDeleteClick={(id) => setDeletingCategoryId(id)}
+            />
           ))}
+          {editingCategoryId != null && (
+            <CategoryUpdateAction
+              id={editingCategoryId}
+              name={
+                categoryListData.find((c) => c.id === editingCategoryId)?.name
+              }
+              description={
+                categoryListData.find((c) => c.id === editingCategoryId)
+                  ?.description
+              }
+              refetch={categoryListQuery.refetch}
+              open={true}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) setEditingCategoryId(null);
+              }}
+            />
+          )}
+          {deletingCategoryId != null && (
+            <CategoryDeleteAction
+              id={deletingCategoryId}
+              refetch={categoryListQuery.refetch}
+              open={true}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) setDeletingCategoryId(null);
+              }}
+            />
+          )}
         </section>
       )}
     </div>
@@ -281,9 +292,9 @@ function CategoryUpdateAction(props: {
   description: string | undefined;
 
   refetch: () => Promise<unknown>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = React.useState(false);
-
   const [categoryUpdateMutation, categoryUpdateState] = useMutation<
     {
       categoryUpdate?: {
@@ -342,17 +353,11 @@ function CategoryUpdateAction(props: {
 
     await props.refetch();
 
-    setOpen(false);
+    props.onOpenChange(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" variant="ghost">
-          <IconPencil />
-          <span className="sr-only">Update category</span>
-        </Button>
-      </DialogTrigger>
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Update an existing category</DialogTitle>
@@ -405,7 +410,7 @@ function CategoryUpdateAction(props: {
                   variant="outline"
                   className="flex-1"
                   disabled={categoryUpdateState.loading === true}
-                  onClick={() => setOpen(false)}
+                  onClick={() => props.onOpenChange(false)}
                 >
                   Cancel
                 </Button>
@@ -428,9 +433,9 @@ function CategoryUpdateAction(props: {
 function CategoryDeleteAction(props: {
   id: string;
   refetch: () => Promise<unknown>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = React.useState(false);
-
   const [categoryDeleteMutation, categoryDeleteState] = useMutation<
     {
       categoryDelete?: {
@@ -463,17 +468,11 @@ function CategoryDeleteAction(props: {
 
     await props.refetch();
 
-    setOpen(false);
+    props.onOpenChange(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" variant="ghost">
-          <IconTrash className="text-destructive" />
-          <span className="sr-only">Delete category</span>
-        </Button>
-      </DialogTrigger>
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Update an existing category</DialogTitle>
@@ -488,7 +487,7 @@ function CategoryDeleteAction(props: {
             type="button"
             variant="outline"
             className="flex-1"
-            onClick={() => setOpen(false)}
+            onClick={() => props.onOpenChange(false)}
             disabled={categoryDeleteState.loading === true}
           >
             Cancel
