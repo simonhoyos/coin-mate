@@ -7,6 +7,7 @@ export const typeDefs = `#graphql
     id: UUID!
 
     name: String
+    description: String
   }
 
   type SpaceConnection {
@@ -14,7 +15,7 @@ export const typeDefs = `#graphql
   }
 
   extend type Query {
-    userSpaces: SpaceConnection
+    userSpaceList: SpaceConnection
   }
 `;
 
@@ -22,10 +23,13 @@ export const resolvers = {
   Space: {
     name: (parent: { id: string }, _args: never, context: IContext) =>
       Space.gen({ context, id: parent.id }).then((space) => space?.name),
+
+    description: (parent: { id: string }, _args: never, context: IContext) =>
+      Space.gen({ context, id: parent.id }).then((space) => space?.description),
   },
 
   Query: {
-    async userSpaces(_parent: never, _args: never, context: IContext) {
+    async userSpaceList(_parent: never, _args: never, context: IContext) {
       if (context.user == null) {
         throw new Error('Unauthorized');
       }

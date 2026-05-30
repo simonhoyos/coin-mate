@@ -259,18 +259,20 @@ export default function HistoryPage() {
   }, [editingTransactionId, transactionListData]);
 
   const spaceListQuery = useQuery<{
-    userSpaces?: {
+    userSpaceList?: {
       edges?: {
         id: string;
+
         name?: string;
       }[];
     };
   }>(
     gql`
       query UserSpacesQueryFromExpenses {
-        userSpaces {
+        userSpaceList {
           edges {
             id
+
             name
           }
         }
@@ -278,7 +280,7 @@ export default function HistoryPage() {
     `,
   );
 
-  const spaceListData = spaceListQuery.data?.userSpaces?.edges ?? [];
+  const spaceListData = spaceListQuery.data?.userSpaceList?.edges ?? [];
 
   const [transactionLedgerCreateMutation, transactionLedgerCreateState] =
     useMutation<
