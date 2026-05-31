@@ -39,12 +39,14 @@ const server = new ApolloServer<IContext>({
     categoryTypeDefs,
     spaceTypeDefs,
     transactionLedgerTypeDefs,
+    spaceTypeDefs,
   ].flat(),
   resolvers: merge(
     userResolvers,
     categoryResolvers,
     spaceResolvers,
     transactionLedgerResolvers,
+    spaceResolvers,
   ),
   plugins: [
     process.env.NODE_ENV === 'production'
