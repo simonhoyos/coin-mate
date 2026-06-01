@@ -32,7 +32,7 @@ describe('models/category', () => {
       reason: 'description too long',
     },
   ])(
-    'fails to create/update category with validation error: ($reason)',
+    'fails to create category with validation error: ($reason)',
     async ({ name, description }) => {
       const user = assertNotNull(await createUser(context.services.knex));
       const contextWithUser = context.login(user);
@@ -47,6 +47,22 @@ describe('models/category', () => {
           },
         }),
       ).rejects.toThrow(ZodError);
+    },
+  );
+
+  it.each([
+    { name: '', reason: 'name too short' },
+    { name: 'a'.repeat(33), reason: 'name too long' },
+    {
+      name: 'valid name',
+      description: 'a'.repeat(257),
+      reason: 'description too long',
+    },
+  ])(
+    'fails to update category with validation error: ($reason)',
+    async ({ name, description }) => {
+      const user = assertNotNull(await createUser(context.services.knex));
+      const contextWithUser = context.login(user);
 
       const space = assertNotNull(
         await createSpace(context.services.knex, {
@@ -66,7 +82,6 @@ describe('models/category', () => {
           context: contextWithUser,
           data: {
             id: category.id,
-            // @ts-expect-error undefined is not assignable to name
             name,
             description,
           },
@@ -78,7 +93,7 @@ describe('models/category', () => {
   it('Authenticated user is authorized to create/read/update/delete an owned category', async () => {
     const user = assertNotNull(await createUser(context.services.knex));
 
-    assertNotNull(
+    const space = assertNotNull(
       await createSpace(context.services.knex, {
         user_id: user.id,
       }),
@@ -93,6 +108,7 @@ describe('models/category', () => {
           data: {
             name: 'a'.repeat(32),
             description: 'a'.repeat(254),
+            space_id: space.id,
           },
         })
       ).category,
@@ -280,6 +296,7 @@ describe('models/category', () => {
         data: {
           name: 'a'.repeat(32),
           description: 'a'.repeat(254),
+          space_id: space.id,
         },
       }),
     ).rejects.toThrow('User must be authenticated to create a category');

@@ -9,6 +9,10 @@ interface Category {
   id: string;
   name?: string;
   description?: string;
+  space?: {
+    id: string;
+    name?: string;
+  };
 }
 
 interface CategoryCardProps {
@@ -82,6 +86,9 @@ export function CategoryCard({
         <div className="flex flex-col gap-2 pointer-events-none">
           <h2 className="font-bold capitalize">{category.name}</h2>
           {(category.description ?? '') !== '' && <p>{category.description}</p>}
+          {category.space?.name != null && (
+            <p className="text-xs text-gray-500">{category.space.name}</p>
+          )}
         </div>
 
         <div className="absolute right-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex gap-1 pointer-events-none">

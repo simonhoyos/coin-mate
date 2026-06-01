@@ -6,7 +6,6 @@ import { createLoader } from '@/lib/dataloader';
 import { getObjectDiff } from '@/lib/diff';
 import type { IContext } from '@/lib/types';
 import { Audit } from '../audit';
-import type { Space } from '../space';
 import { User } from '../user';
 
 export class Category {
@@ -56,22 +55,11 @@ export class Category {
 
     const trxResult = await args.context.services.knex.transaction(
       async (trx) => {
-        const space = assertNotNull(
-          await trx<Space>('space')
-            .select('space.id')
-            .where({
-              user_id: userId,
-            })
-            .limit(1)
-            .first(),
-          'Space not found for user',
-        );
-
         const payload = {
           name: parsedData.name,
           description: parsedData.description,
           user_id: userId,
-          space_id: space.id,
+          space_id: parsedData.space_id,
         };
 
         const category = assertNotNull(
@@ -249,10 +237,18 @@ const CategoryCreateSchema = z.object({
     .max(32)
     .transform((val) => val.toLowerCase()),
   description: z.string().max(256).optional(),
+  space_id: z.uuid(),
 });
 
-const CategoryUpdateSchema = CategoryCreateSchema.extend({
+const CategoryUpdateSchema = z.object({
   id: z.uuid(),
+  name: z
+    .string()
+    .min(1)
+    .max(32)
+    .transform((val) => val.toLowerCase())
+    .optional(),
+  description: z.string().max(256).optional(),
 });
 
 const CategoryDeleteSchema = z.object({
@@ -268,11 +264,12 @@ const getCategoryById = createLoader(
         'category.name',
         'category.description',
         'category.user_id',
+        'category.space_id',
       ])
       .whereIn('category.id', args.keys)
       .whereNull('category.archived_at')) as unknown as Pick<
       Category,
-      'id' | 'name' | 'description' | 'user_id'
+      'id' | 'name' | 'description' | 'user_id' | 'space_id'
     >[];
 
     return args.keys.map((key) => {
