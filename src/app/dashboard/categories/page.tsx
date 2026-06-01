@@ -37,6 +37,7 @@ import { Spinner } from '@/components/ui/spinner';
 const CategoryCreateFormSchema = z.object({
   name: z.string().min(1).max(32),
   description: z.string().max(256).optional(),
+  space_id: z.string().min(1),
 });
 
 const CategoryUpdateFormSchema = z.object({
@@ -54,31 +55,64 @@ export default function CategoriesPage() {
     string | null
   >(null);
 
-  const categoryListQuery = useQuery<{
-    categoryList?: {
+  const spaceListQuery = useQuery<{
+    userSpaceList?: {
       edges?: {
         id: string;
-
         name?: string;
-        description?: string;
       }[];
     };
   }>(
     gql`
-      query CategoryListQuery {
-        categoryList {
+      query CategoriesPageSpaceListQuery {
+        userSpaceList {
           edges {
             id
-
             name
-            description
           }
         }
       }
     `,
   );
 
-  const categoryListData = categoryListQuery.data?.categoryList?.edges ?? [];
+  const spaceListData = spaceListQuery.data?.userSpaceList?.edges ?? [];
+
+  const categoryListQuery = useQuery<{
+    allCategoriesList?: {
+      edges?: {
+        id: string;
+
+        name?: string;
+        description?: string;
+
+        space?: {
+          id: string;
+          name?: string;
+        };
+      }[];
+    };
+  }>(
+    gql`
+      query AllCategoriesListQuery {
+        allCategoriesList {
+          edges {
+            id
+
+            name
+            description
+
+            space {
+              id
+              name
+            }
+          }
+        }
+      }
+    `,
+  );
+
+  const categoryListData =
+    categoryListQuery.data?.allCategoriesList?.edges ?? [];
 
   const [categoryCreateMutation, categoryCreateState] = useMutation<
     {
@@ -93,6 +127,7 @@ export default function CategoriesPage() {
       input: {
         name: string;
         description: string | undefined;
+        space_id: string;
       };
     }
   >(
@@ -111,8 +146,9 @@ export default function CategoriesPage() {
     () => ({
       name: '',
       description: '',
+      space_id: spaceListData[0]?.id ?? '',
     }),
-    [],
+    [spaceListData[0]?.id],
   );
 
   const categoryCreateForm = useForm({
@@ -120,6 +156,19 @@ export default function CategoriesPage() {
     mode: 'onBlur',
     defaultValues: categoryCreateDefaultValues,
   });
+
+  React.useEffect(() => {
+    if (spaceListData[0]?.id != null) {
+      categoryCreateForm.reset({
+        ...categoryCreateForm.getValues(),
+        space_id: spaceListData[0].id,
+      });
+    }
+  }, [
+    spaceListData[0]?.id,
+    categoryCreateForm.reset,
+    categoryCreateForm.getValues,
+  ]);
 
   async function categoryCreateSubmit(
     data: z.infer<typeof CategoryCreateFormSchema>,
@@ -129,6 +178,7 @@ export default function CategoriesPage() {
         input: {
           name: data.name,
           description: data.description,
+          space_id: data.space_id,
         },
       },
     });
@@ -189,6 +239,30 @@ export default function CategoriesPage() {
                         aria-invalid={fieldState.invalid}
                         type="text"
                       />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="space_id"
+                  control={categoryCreateForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field>
+                      <FieldLabel htmlFor="space_id">Space</FieldLabel>
+                      <select
+                        {...field}
+                        id="space_id"
+                        disabled={spaceListData.length <= 1}
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {spaceListData.map((space) => (
+                          <option key={space.id} value={space.id}>
+                            {space.name}
+                          </option>
+                        ))}
+                      </select>
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
