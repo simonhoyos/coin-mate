@@ -437,6 +437,7 @@ export default function HistoryPage() {
         space_id: selectedSpaceId || undefined,
       },
       skip: !selectedSpaceId,
+      fetchPolicy: 'no-cache',
     },
   );
 
