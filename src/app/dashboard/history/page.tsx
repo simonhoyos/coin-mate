@@ -413,7 +413,7 @@ export default function HistoryPage() {
   const selectedSpaceId = transactionLedgerForm.watch('space_id');
 
   const categoryListQuery = useQuery<{
-    categoryList?: {
+    categoryListBySpace?: {
       edges?: {
         id: string;
 
@@ -422,8 +422,8 @@ export default function HistoryPage() {
     };
   }>(
     gql`
-      query CategoryListQueryFromExpenses($space_id: UUID) {
-        categoryList(space_id: $space_id) {
+      query CategoryListQueryFromExpenses($space_id: UUID!) {
+        categoryListBySpace(space_id: $space_id) {
           edges {
             id
 
@@ -434,14 +434,14 @@ export default function HistoryPage() {
     `,
     {
       variables: {
-        space_id: selectedSpaceId || undefined,
+        space_id: selectedSpaceId,
       },
-      skip: !selectedSpaceId,
+      skip: (selectedSpaceId ?? '') == '',
       fetchPolicy: 'no-cache',
     },
   );
 
-  const categoryListData = categoryListQuery.data?.categoryList?.edges ?? [];
+  const categoryListData = categoryListQuery.data?.categoryListBySpace?.edges ?? [];
   async function transactionLedgerCreateSubmit(
     data: z.infer<typeof TransactionLedgerFormSchema>,
   ) {

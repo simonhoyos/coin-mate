@@ -28,7 +28,13 @@ export class Category {
       id: args.id,
     });
 
-    return record?.user_id != null && record.user_id === args.context.user?.id
+    return record?.space_id != null &&
+      args.context.user?.id != null &&
+      (await args.context.services
+        .knex('space_user')
+        .where({ user_id: args.context.user?.id, space_id: record?.space_id })
+        .whereNull('archived_at')
+        .first()) !== null
       ? record
       : null;
   }

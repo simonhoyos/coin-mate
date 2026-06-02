@@ -46,6 +46,7 @@ export const typeDefs = `#graphql
 
   extend type Query {
     categoryList(space_id: UUID): CategoryConnection
+    categoryListBySpace(space_id: UUID!): CategoryConnection
     allCategoriesList: CategoryConnection
   }
 
@@ -108,6 +109,38 @@ export const resolvers = {
       if (args.space_id != null) {
         query.where({ space_id: args.space_id });
       }
+
+      const categories = await query.orderBy('name', 'asc');
+
+      return {
+        edges: compact(
+          await Promise.all(
+            categories.map((category) =>
+              Category.gen({
+                context,
+                id: category.id,
+              }).then((category) =>
+                category != null ? { id: category.id } : null,
+              ),
+            ),
+          ),
+        ),
+      };
+    },
+
+    async categoryListBySpace(
+      _parent: never,
+      args: { space_id: string },
+      context: IContext,
+    ) {
+      if (context.user == null) {
+        throw new Error('Unauthorized');
+      }
+
+      const query = context.services.knex<Category>('category').where({
+        space_id: args.space_id,
+        archived_at: null,
+      });
 
       const categories = await query.orderBy('name', 'asc');
 
