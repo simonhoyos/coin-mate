@@ -1121,6 +1121,7 @@ export default function HistoryPage() {
                 onChange={setDraftCategoryIds}
                 placeholder="Select categories..."
                 searchPlaceholder="Search categories..."
+                container={null}
               />
             </div>
           </div>

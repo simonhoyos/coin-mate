@@ -21,6 +21,7 @@ interface ComboboxProps {
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
+  container?: React.ComponentProps<typeof PopoverContent>['container'];
 }
 
 function Combobox({
@@ -30,6 +31,7 @@ function Combobox({
   placeholder = 'Select...',
   searchPlaceholder = 'Search...',
   className,
+  container,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -106,6 +108,7 @@ function Combobox({
       <PopoverContent
         className="w-[var(--radix-popover-trigger-width)] p-0"
         align="start"
+        container={container}
       >
         <div className="flex flex-col">
           <input
