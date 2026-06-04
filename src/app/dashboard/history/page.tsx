@@ -3,10 +3,14 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
+import {
+  IconChevronDown,
+  IconCirclePlus,
+  IconFilter,
+  IconFolderCode,
+} from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { groupBy } from 'lodash';
-import { ChevronDownIcon, ListFilter } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
@@ -632,7 +636,7 @@ export default function HistoryPage() {
               className="relative"
               onClick={() => setFilterDrawerOpen(true)}
             >
-              <ListFilter className="size-4" />
+              <IconFilter className="size-4" />
               <span>Filters</span>
               {activeFilterCount > 0 && (
                 <span className="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full text-xs font-medium">
@@ -926,7 +930,7 @@ export default function HistoryPage() {
                           {field.value
                             ? new Date(field.value).toLocaleDateString()
                             : 'Select date'}
-                          <ChevronDownIcon />
+                          <IconChevronDown />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent

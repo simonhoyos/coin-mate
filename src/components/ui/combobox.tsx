@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckIcon, ChevronsUpDown, X } from 'lucide-react';
+import { IconCheck, IconSelector, IconX } from '@tabler/icons-react';
 import * as React from 'react';
 import {
   Popover,
@@ -92,7 +92,7 @@ function Combobox({
                       removeOption(valueToRemove);
                     }}
                   >
-                    <X className="size-3" />
+                    <IconX className="size-3" />
                   </button>
                 </span>
               ))
@@ -100,7 +100,7 @@ function Combobox({
               <span className="text-muted-foreground">{placeholder}</span>
             )}
           </span>
-          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          <IconSelector className="ml-2 size-4 shrink-0 opacity-50" />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -139,7 +139,7 @@ function Combobox({
                         isSelected && 'bg-primary text-primary-foreground',
                       )}
                     >
-                      {isSelected && <CheckIcon className="size-3" />}
+                      {isSelected && <IconCheck className="size-3" />}
                     </div>
                     <span>{option.label}</span>
                   </button>

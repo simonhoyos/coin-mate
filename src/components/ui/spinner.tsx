@@ -1,11 +1,11 @@
-import { Loader2Icon } from 'lucide-react';
+import { IconLoader2, type IconProps } from '@tabler/icons-react';
 
 import { cn } from '@/lib/utils';
 
-function Spinner({ className, ...props }: React.ComponentProps<'svg'>) {
+function Spinner({ className, ...props }: IconProps) {
   return (
     // biome-ignore lint: a11y/useSemanticElements: <Spinner> is purely decorative
-    <Loader2Icon
+    <IconLoader2
       role="status"
       aria-label="Loading"
       className={cn('size-4 animate-spin', className)}
