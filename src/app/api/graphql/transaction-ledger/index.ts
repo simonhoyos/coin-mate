@@ -63,7 +63,7 @@ export const typeDefs = `#graphql
   }
 
   extend type Query {
-    transactionLedgerList(type: TransactionLedgerType, limit: Int, cursor: String): TransactionLedgerConnection
+    transactionLedgerList(type: TransactionLedgerType, limit: Int, cursor: String, category_ids: [String]): TransactionLedgerConnection
   }
 
   extend type Mutation {
@@ -152,7 +152,12 @@ export const resolvers = {
   Query: {
     async transactionLedgerList(
       _parent: never,
-      args: { type?: string; limit?: number; cursor?: string },
+      args: {
+        type?: string;
+        limit?: number;
+        cursor?: string;
+        category_ids?: string[];
+      },
       context: IContext,
     ) {
       if (context.user == null) {
@@ -170,6 +175,10 @@ export const resolvers = {
         .orderBy('transacted_at', 'desc')
         .orderBy('id', 'desc')
         .limit(limit + 1);
+
+      if (args.category_ids != null && args.category_ids.length > 0) {
+        query.whereIn('category_id', args.category_ids);
+      }
 
       if (cursor != null) {
         const cursorTransaction = await context.services

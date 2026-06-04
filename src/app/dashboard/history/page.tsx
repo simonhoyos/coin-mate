@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { groupBy } from 'lodash';
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, ListFilter } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { TransactionCard } from '@/components/transaction-card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import {
   Empty,
   EmptyContent,
@@ -103,6 +112,48 @@ export default function HistoryPage() {
   >(null);
 
   const currentType = searchParams.get('type') ?? 'expense';
+  const currentCategoryIds = React.useMemo(() => {
+    const raw = searchParams.get('categories');
+    return raw ? raw.split(',').filter(Boolean) : [];
+  }, [searchParams]);
+
+  const [filterDrawerOpen, setFilterDrawerOpen] = React.useState(false);
+  const [draftCategoryIds, setDraftCategoryIds] =
+    React.useState<string[]>(currentCategoryIds);
+
+  React.useEffect(() => {
+    if (filterDrawerOpen) {
+      setDraftCategoryIds(currentCategoryIds);
+    }
+  }, [filterDrawerOpen, currentCategoryIds]);
+
+  const filterCategoryListQuery = useQuery<{
+    allCategoriesList?: {
+      edges?: {
+        id: string;
+        name?: string;
+      }[];
+    };
+  }>(
+    gql`
+      query AllCategoriesListForFilter {
+        allCategoriesList {
+          edges {
+            id
+            name
+          }
+        }
+      }
+    `,
+  );
+
+  const filterCategoryOptions = React.useMemo(() => {
+    return (filterCategoryListQuery.data?.allCategoriesList?.edges ?? []).map(
+      (cat) => ({ label: cat.name ?? 'Unnamed', value: cat.id }),
+    );
+  }, [filterCategoryListQuery.data]);
+
+  const activeFilterCount = currentCategoryIds.length > 0 ? 1 : 0;
 
   const createQueryString = React.useCallback(
     (args: { appendKeys?: { [key: string]: string }; omitKeys?: string[] }) => {
@@ -156,8 +207,8 @@ export default function HistoryPage() {
     };
   }>(
     gql`
-      query TransactionListQuery($type: TransactionLedgerType, $limit: Int, $cursor: String) {
-        transactionLedgerList(type: $type, limit: $limit, cursor: $cursor) {
+      query TransactionListQuery($type: TransactionLedgerType, $limit: Int, $cursor: String, $category_ids: [String]) {
+        transactionLedgerList(type: $type, limit: $limit, cursor: $cursor, category_ids: $category_ids) {
           edges {
             id
 
@@ -191,6 +242,8 @@ export default function HistoryPage() {
       variables: {
         type: currentType,
         limit: 30,
+        category_ids:
+          currentCategoryIds.length > 0 ? currentCategoryIds : undefined,
       },
     },
   );
@@ -436,12 +489,13 @@ export default function HistoryPage() {
       variables: {
         space_id: selectedSpaceId,
       },
-      skip: (selectedSpaceId ?? '') == '',
+      skip: (selectedSpaceId ?? '') === '',
       fetchPolicy: 'no-cache',
     },
   );
 
-  const categoryListData = categoryListQuery.data?.categoryListBySpace?.edges ?? [];
+  const categoryListData =
+    categoryListQuery.data?.categoryListBySpace?.edges ?? [];
   async function transactionLedgerCreateSubmit(
     data: z.infer<typeof TransactionLedgerFormSchema>,
   ) {
@@ -552,23 +606,41 @@ export default function HistoryPage() {
             </Button>
           </div>
 
-          <Tabs
-            value={currentType}
-            onValueChange={(value) =>
-              router.push(
-                createQueryString({
-                  appendKeys: {
-                    type: value,
-                  },
-                }),
-              )
-            }
-          >
-            <TabsList>
-              <TabsTrigger value="expense">Expenses</TabsTrigger>
-              <TabsTrigger value="income">Incomes</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center justify-between">
+            <Tabs
+              value={currentType}
+              onValueChange={(value) =>
+                router.push(
+                  createQueryString({
+                    appendKeys: {
+                      type: value,
+                    },
+                  }),
+                )
+              }
+            >
+              <TabsList>
+                <TabsTrigger value="expense">Expenses</TabsTrigger>
+                <TabsTrigger value="income">Incomes</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="relative"
+              onClick={() => setFilterDrawerOpen(true)}
+            >
+              <ListFilter className="size-4" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full text-xs font-medium">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
 
         {transactionListQuery.loading === true &&
@@ -1026,6 +1098,65 @@ export default function HistoryPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Drawer
+        direction="right"
+        open={filterDrawerOpen}
+        onOpenChange={setFilterDrawerOpen}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Filters</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">Category</span>
+              <Combobox
+                options={filterCategoryOptions}
+                value={draftCategoryIds}
+                onChange={setDraftCategoryIds}
+                placeholder="Select categories..."
+                searchPlaceholder="Search categories..."
+              />
+            </div>
+          </div>
+          <DrawerFooter>
+            <Button
+              type="button"
+              onClick={() => {
+                const args: {
+                  appendKeys?: { [key: string]: string };
+                  omitKeys?: string[];
+                } = {};
+                if (draftCategoryIds.length > 0) {
+                  args.appendKeys = { categories: draftCategoryIds.join(',') };
+                } else {
+                  args.omitKeys = ['categories'];
+                }
+                const url = createQueryString(args);
+                router.push(url);
+                setFilterDrawerOpen(false);
+              }}
+            >
+              Apply
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setDraftCategoryIds([]);
+              }}
+            >
+              Clear filters
+            </Button>
+            <DrawerClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }
