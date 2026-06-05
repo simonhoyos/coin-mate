@@ -63,7 +63,7 @@ export const typeDefs = `#graphql
   }
 
   extend type Query {
-    transactionLedgerList(type: TransactionLedgerType, limit: Int, cursor: String, category_ids: [String]): TransactionLedgerConnection
+    transactionLedgerList(type: TransactionLedgerType, limit: Int, cursor: String, category_ids: [String], space_ids: [String]): TransactionLedgerConnection
   }
 
   extend type Mutation {
@@ -157,6 +157,7 @@ export const resolvers = {
         limit?: number;
         cursor?: string;
         category_ids?: string[];
+        space_ids?: string[];
       },
       context: IContext,
     ) {
@@ -178,6 +179,10 @@ export const resolvers = {
 
       if (args.category_ids != null && args.category_ids.length > 0) {
         query.whereIn('category_id', args.category_ids);
+      }
+
+      if (args.space_ids != null && args.space_ids.length > 0) {
+        query.whereIn('space_id', args.space_ids);
       }
 
       if (cursor != null) {

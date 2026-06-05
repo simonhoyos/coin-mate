@@ -116,20 +116,27 @@ export default function HistoryPage() {
   >(null);
 
   const currentType = searchParams.get('type') ?? 'expense';
+  const currentSpaceIds = React.useMemo(() => {
+    const raw = searchParams.get('spaces');
+    return raw ? raw.split(',').filter(Boolean) : [];
+  }, [searchParams]);
   const currentCategoryIds = React.useMemo(() => {
     const raw = searchParams.get('categories');
     return raw ? raw.split(',').filter(Boolean) : [];
   }, [searchParams]);
 
   const [filterDrawerOpen, setFilterDrawerOpen] = React.useState(false);
+  const [draftSpaceIds, setDraftSpaceIds] =
+    React.useState<string[]>(currentSpaceIds);
   const [draftCategoryIds, setDraftCategoryIds] =
     React.useState<string[]>(currentCategoryIds);
 
   React.useEffect(() => {
     if (filterDrawerOpen) {
+      setDraftSpaceIds(currentSpaceIds);
       setDraftCategoryIds(currentCategoryIds);
     }
-  }, [filterDrawerOpen, currentCategoryIds]);
+  }, [filterDrawerOpen, currentSpaceIds, currentCategoryIds]);
 
   const filterCategoryListQuery = useQuery<{
     allCategoriesList?: {
@@ -157,7 +164,7 @@ export default function HistoryPage() {
     );
   }, [filterCategoryListQuery.data]);
 
-  const activeFilterCount = currentCategoryIds.length > 0 ? 1 : 0;
+  const activeFilterCount = (currentSpaceIds.length > 0 ? 1 : 0) + (currentCategoryIds.length > 0 ? 1 : 0);
 
   const createQueryString = React.useCallback(
     (args: { appendKeys?: { [key: string]: string }; omitKeys?: string[] }) => {
@@ -211,8 +218,8 @@ export default function HistoryPage() {
     };
   }>(
     gql`
-      query TransactionListQuery($type: TransactionLedgerType, $limit: Int, $cursor: String, $category_ids: [String]) {
-        transactionLedgerList(type: $type, limit: $limit, cursor: $cursor, category_ids: $category_ids) {
+      query TransactionListQuery($type: TransactionLedgerType, $limit: Int, $cursor: String, $category_ids: [String], $space_ids: [String]) {
+        transactionLedgerList(type: $type, limit: $limit, cursor: $cursor, category_ids: $category_ids, space_ids: $space_ids) {
           edges {
             id
 
@@ -248,6 +255,8 @@ export default function HistoryPage() {
         limit: 30,
         category_ids:
           currentCategoryIds.length > 0 ? currentCategoryIds : undefined,
+        space_ids:
+          currentSpaceIds.length > 0 ? currentSpaceIds : undefined,
       },
     },
   );
@@ -338,6 +347,13 @@ export default function HistoryPage() {
   );
 
   const spaceListData = spaceListQuery.data?.userSpaceList?.edges ?? [];
+
+  const filterSpaceOptions = React.useMemo(() => {
+    return spaceListData.map((space) => ({
+      label: space.name ?? 'Unnamed',
+      value: space.id,
+    }));
+  }, [spaceListData]);
 
   const [transactionLedgerCreateMutation, transactionLedgerCreateState] =
     useMutation<
@@ -1114,6 +1130,17 @@ export default function HistoryPage() {
           </DrawerHeader>
           <div className="flex flex-col gap-4 p-4">
             <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">Space</span>
+              <Combobox
+                options={filterSpaceOptions}
+                value={draftSpaceIds}
+                onChange={setDraftSpaceIds}
+                placeholder="Select spaces..."
+                searchPlaceholder="Search spaces..."
+                container={null}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">Category</span>
               <Combobox
                 options={filterCategoryOptions}
@@ -1133,10 +1160,15 @@ export default function HistoryPage() {
                   appendKeys?: { [key: string]: string };
                   omitKeys?: string[];
                 } = {};
-                if (draftCategoryIds.length > 0) {
-                  args.appendKeys = { categories: draftCategoryIds.join(',') };
+                if (draftSpaceIds.length > 0) {
+                  args.appendKeys = { spaces: draftSpaceIds.join(',') };
                 } else {
-                  args.omitKeys = ['categories'];
+                  args.omitKeys = ['spaces'];
+                }
+                if (draftCategoryIds.length > 0) {
+                  args.appendKeys = { ...args.appendKeys, categories: draftCategoryIds.join(',') };
+                } else {
+                  args.omitKeys = [...(args.omitKeys ?? []), 'categories'];
                 }
                 const url = createQueryString(args);
                 router.push(url);
@@ -1149,6 +1181,7 @@ export default function HistoryPage() {
               type="button"
               variant="ghost"
               onClick={() => {
+                setDraftSpaceIds([]);
                 setDraftCategoryIds([]);
               }}
             >
