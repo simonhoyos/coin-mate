@@ -11,8 +11,8 @@ export const typeDefs = `#graphql
     description: String
     currency: String
     original_currency: String
-    amount_cents: Int
-    original_amount_cents: Int
+    amount_cents: BigInt
+    original_amount_cents: BigInt
     transacted_at: String
     type: String
 

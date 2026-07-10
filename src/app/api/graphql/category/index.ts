@@ -24,7 +24,7 @@ export const typeDefs = `#graphql
 
     totalCount: Int
 
-    totalAmountCents: Int
+    totalAmountCents: BigInt
     averageAmountCents: Float
   }
 

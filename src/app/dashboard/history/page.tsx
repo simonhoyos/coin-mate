@@ -164,7 +164,9 @@ export default function HistoryPage() {
     );
   }, [filterCategoryListQuery.data]);
 
-  const activeFilterCount = (currentSpaceIds.length > 0 ? 1 : 0) + (currentCategoryIds.length > 0 ? 1 : 0);
+  const activeFilterCount =
+    (currentSpaceIds.length > 0 ? 1 : 0) +
+    (currentCategoryIds.length > 0 ? 1 : 0);
 
   const createQueryString = React.useCallback(
     (args: { appendKeys?: { [key: string]: string }; omitKeys?: string[] }) => {
@@ -255,8 +257,7 @@ export default function HistoryPage() {
         limit: 30,
         category_ids:
           currentCategoryIds.length > 0 ? currentCategoryIds : undefined,
-        space_ids:
-          currentSpaceIds.length > 0 ? currentSpaceIds : undefined,
+        space_ids: currentSpaceIds.length > 0 ? currentSpaceIds : undefined,
       },
     },
   );
@@ -1166,7 +1167,10 @@ export default function HistoryPage() {
                   args.omitKeys = ['spaces'];
                 }
                 if (draftCategoryIds.length > 0) {
-                  args.appendKeys = { ...args.appendKeys, categories: draftCategoryIds.join(',') };
+                  args.appendKeys = {
+                    ...args.appendKeys,
+                    categories: draftCategoryIds.join(','),
+                  };
                 } else {
                   args.omitKeys = [...(args.omitKeys ?? []), 'categories'];
                 }
