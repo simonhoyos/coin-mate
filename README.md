@@ -22,9 +22,7 @@ This project is built with the following technologies:
 
 Before you begin, ensure you have the following installed:
 
--   [nvm](https://github.com/nvm-sh/nvm) (Node Version Manager)
--   [Node.js](https://nodejs.org/) (Managed via `nvm`)
--   [pnpm](https://pnpm.io/) (Package manager)
+-   [mise](https://mise.jdx.dev/) (Installs the Node.js and pnpm versions this project uses)
 -   [Docker](https://www.docker.com/) (For running the local database)
 
 ## Getting Started
@@ -36,12 +34,12 @@ git clone git@github.com/simonhoyos/coin-mate.git
 cd coin-mate
 ```
 
-### 2. Set Node.js version
+### 2. Install tool versions
 
-Ensure you are using the version of Node.js specified in `.nvmrc`:
+The Node.js and pnpm versions are defined in `mise.toml`. Install them with:
 
 ```bash
-nvm use
+mise install
 ```
 
 ### 3. Install dependencies
