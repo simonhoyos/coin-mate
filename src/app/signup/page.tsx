@@ -277,10 +277,10 @@ export default function SignUpPage() {
                         <div>
                           <div
                             className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              'flex flex-row items-center gap-2 text-xs text-muted-foreground',
                               passwordValue.length >= 8 &&
                                 passwordValue.length <= 64
-                                ? 'text-green-600'
+                                ? 'text-green-600 dark:text-green-400'
                                 : undefined,
                             )}
                           >
@@ -289,9 +289,9 @@ export default function SignUpPage() {
                           </div>
                           <div
                             className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              'flex flex-row items-center gap-2 text-xs text-muted-foreground',
                               /[A-Z]/.test(passwordValue)
-                                ? 'text-green-600'
+                                ? 'text-green-600 dark:text-green-400'
                                 : undefined,
                             )}
                           >
@@ -300,9 +300,9 @@ export default function SignUpPage() {
                           </div>
                           <div
                             className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              'flex flex-row items-center gap-2 text-xs text-muted-foreground',
                               /[a-z]/.test(passwordValue)
-                                ? 'text-green-600'
+                                ? 'text-green-600 dark:text-green-400'
                                 : undefined,
                             )}
                           >
@@ -311,9 +311,9 @@ export default function SignUpPage() {
                           </div>
                           <div
                             className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              'flex flex-row items-center gap-2 text-xs text-muted-foreground',
                               /[0-9]/.test(passwordValue)
-                                ? 'text-green-600'
+                                ? 'text-green-600 dark:text-green-400'
                                 : undefined,
                             )}
                           >
@@ -322,9 +322,9 @@ export default function SignUpPage() {
                           </div>
                           <div
                             className={cn(
-                              'flex flex-row items-center gap-2 text-xs text-gray-600',
+                              'flex flex-row items-center gap-2 text-xs text-muted-foreground',
                               /[@$!%*?&#\-_+=.^]/.test(passwordValue)
-                                ? 'text-green-600'
+                                ? 'text-green-600 dark:text-green-400'
                                 : undefined,
                             )}
                           >
