@@ -101,7 +101,7 @@ export function TransactionCard({
       >
         <div className="flex justify-between items-start pointer-events-none">
           <div className="flex flex-col gap-1">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {transaction.category?.name}
               {` (${transaction.type})`}
               {transaction.space?.name != null &&

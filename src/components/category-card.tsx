@@ -87,7 +87,9 @@ export function CategoryCard({
           <h2 className="font-bold capitalize">{category.name}</h2>
           {(category.description ?? '') !== '' && <p>{category.description}</p>}
           {category.space?.name != null && (
-            <p className="text-xs text-gray-500">{category.space.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {category.space.name}
+            </p>
           )}
         </div>
 
