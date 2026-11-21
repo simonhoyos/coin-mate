@@ -56,7 +56,7 @@ export function CategoryCard({
   }, [isMobile, isSwipedOpen, controls]);
 
   return (
-    <div className="relative overflow-hidden rounded border shadow-xs group bg-muted md:flex md:items-center md:bg-background">
+    <div className="relative overflow-hidden rounded border shadow-xs bg-muted md:flex md:items-center md:bg-background">
       {isMobile && (
         <div className="absolute inset-0 flex justify-end items-stretch">
           <div className="flex w-[160px]">
@@ -88,7 +88,7 @@ export function CategoryCard({
         dragElastic={0.1}
         animate={controls}
         {...(isMobile ? { onPanEnd: handlePanEnd } : {})}
-        className="relative px-4 py-6 bg-background flex flex-col gap-2 cursor-pointer md:flex-1 z-10 max-md:active:cursor-grabbing"
+        className="relative px-4 py-6 bg-background flex flex-col gap-2 max-md:cursor-pointer md:flex-1 z-10 max-md:active:cursor-grabbing"
         onClick={() => {
           if (isSwipedOpen) {
             controls.start({ x: 0 });

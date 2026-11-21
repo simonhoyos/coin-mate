@@ -68,7 +68,7 @@ export function TransactionCard({
   }, [isMobile, isSwipedOpen, controls]);
 
   return (
-    <div className="relative overflow-hidden rounded border shadow-xs group bg-muted md:flex md:items-center md:bg-background">
+    <div className="relative overflow-hidden rounded border shadow-xs bg-muted md:flex md:items-center md:bg-background">
       {isMobile && (
         <div className="absolute inset-0 flex justify-end items-stretch">
           <div className="flex w-[160px]">
