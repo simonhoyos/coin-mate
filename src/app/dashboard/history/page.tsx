@@ -437,6 +437,8 @@ export default function HistoryPage() {
       `,
     );
 
+  const defaultSpaceId = spaceListData.at(0)?.id ?? '';
+
   const transactionLedgerDefaultValues = React.useMemo(
     () => ({
       concept: '',
@@ -447,9 +449,9 @@ export default function HistoryPage() {
       type:
         currentType === 'income' ? TypeEnum.enum.income : TypeEnum.enum.expense,
       category_id: '',
-      space_id: spaceListData.at(0)?.id ?? '',
+      space_id: defaultSpaceId,
     }),
-    [currentType, spaceListData],
+    [currentType, defaultSpaceId],
   );
 
   const transactionLedgerValues = React.useMemo(
@@ -471,9 +473,9 @@ export default function HistoryPage() {
           ? TypeEnum.enum.income
           : TypeEnum.enum.expense),
       category_id: transactionEditing?.category?.id ?? '',
-      space_id: transactionEditing?.space_id ?? spaceListData.at(0)?.id ?? '',
+      space_id: transactionEditing?.space_id ?? defaultSpaceId,
     }),
-    [transactionEditing, currentType, spaceListData],
+    [transactionEditing, currentType, defaultSpaceId],
   );
 
   const transactionLedgerForm = useForm({

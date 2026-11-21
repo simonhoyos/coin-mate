@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
 
   const monthParam = searchParams.get('month');
-  const now = startOfMonth(new Date());
+  const now = React.useMemo(() => startOfMonth(new Date()), []);
 
   const currentMonthDate = React.useMemo(() => {
     if (monthParam != null) {
