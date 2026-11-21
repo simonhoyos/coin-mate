@@ -5,7 +5,7 @@ import { motion, type PanInfo, useAnimation } from 'framer-motion';
 import Link from 'next/link';
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobileResolved } from '@/hooks/use-mobile';
 
 interface Transaction {
   id: string;
@@ -39,7 +39,9 @@ export function TransactionCard({
   onDeleteClick,
 }: TransactionCardProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
-  const isMobile = useIsMobile();
+  const viewport = useIsMobileResolved();
+  const isMobile = viewport === true;
+  const isDesktop = viewport === false;
   const controls = useAnimation();
   const [isSwipedOpen, setIsSwipedOpen] = React.useState(false);
 
@@ -138,7 +140,7 @@ export function TransactionCard({
         )}
       </motion.div>
 
-      {!isMobile && (
+      {isDesktop && (
         <div className="flex items-center gap-1 px-2 bg-background">
           <Button variant="ghost" size="icon-sm" asChild>
             <Link href={editHref}>

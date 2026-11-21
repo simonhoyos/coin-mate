@@ -9,7 +9,9 @@ import type React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CategoryCard } from './category-card';
 
-const mobileState = vi.hoisted(() => ({ isMobile: false }));
+const mobileState = vi.hoisted(() => ({
+  isMobile: false as boolean | undefined,
+}));
 const motionState = vi.hoisted(() => ({
   start: vi.fn(),
   onPanEnd: undefined as
@@ -18,7 +20,7 @@ const motionState = vi.hoisted(() => ({
 }));
 
 vi.mock('@/hooks/use-mobile', () => ({
-  useIsMobile: () => mobileState.isMobile,
+  useIsMobileResolved: () => mobileState.isMobile,
 }));
 
 vi.mock('framer-motion', async (importOriginal) => {
@@ -124,6 +126,16 @@ describe('CategoryCard', () => {
 
     it('does not attach a pan handler', () => {
       renderCard();
+      expect(motionState.onPanEnd).toBeUndefined();
+    });
+  });
+
+  describe('before the viewport is measured', () => {
+    it('renders no action set and no pan handler', () => {
+      mobileState.isMobile = undefined;
+      renderCard();
+      expect(screen.queryByRole('button', { name: /^edit$/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^delete$/i })).toBeNull();
       expect(motionState.onPanEnd).toBeUndefined();
     });
   });

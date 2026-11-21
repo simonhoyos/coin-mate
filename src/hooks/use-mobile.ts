@@ -2,7 +2,11 @@ import * as React from 'react';
 
 const MOBILE_BREAKPOINT = 768;
 
-export function useIsMobile() {
+/**
+ * Viewport state before and after the first effect: `undefined` until the
+ * width is measured, so callers can avoid painting for the wrong viewport.
+ */
+export function useIsMobileResolved() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
     undefined,
   );
@@ -17,5 +21,9 @@ export function useIsMobile() {
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
-  return !!isMobile;
+  return isMobile;
+}
+
+export function useIsMobile() {
+  return !!useIsMobileResolved();
 }

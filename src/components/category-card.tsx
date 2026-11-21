@@ -4,7 +4,7 @@ import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { motion, type PanInfo, useAnimation } from 'framer-motion';
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobileResolved } from '@/hooks/use-mobile';
 
 interface Category {
   id: string;
@@ -27,7 +27,9 @@ export function CategoryCard({
   onEditClick,
   onDeleteClick,
 }: CategoryCardProps) {
-  const isMobile = useIsMobile();
+  const viewport = useIsMobileResolved();
+  const isMobile = viewport === true;
+  const isDesktop = viewport === false;
   const controls = useAnimation();
   const [isSwipedOpen, setIsSwipedOpen] = React.useState(false);
 
@@ -105,7 +107,7 @@ export function CategoryCard({
         </div>
       </motion.div>
 
-      {!isMobile && (
+      {isDesktop && (
         <div className="flex items-center gap-1 px-2 bg-background">
           <Button
             type="button"
