@@ -56,7 +56,7 @@ export function CategoryCard({
   return (
     <div className="relative overflow-hidden rounded border shadow-xs group bg-muted md:flex md:items-center md:bg-background">
       {isMobile && (
-        <div className="absolute inset-0 flex justify-end items-stretch md:hidden">
+        <div className="absolute inset-0 flex justify-end items-stretch">
           <div className="flex w-[160px]">
             <Button
               type="button"
@@ -106,7 +106,7 @@ export function CategoryCard({
       </motion.div>
 
       {!isMobile && (
-        <div className="hidden md:flex items-center gap-1 px-2 bg-background">
+        <div className="flex items-center gap-1 px-2 bg-background">
           <Button
             type="button"
             variant="ghost"

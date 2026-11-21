@@ -1,10 +1,22 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
 import type React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { assertNotNull } from '@/lib/assert';
 import { TransactionCard } from './transaction-card';
 
 const mobileState = vi.hoisted(() => ({ isMobile: false }));
+const motionState = vi.hoisted(() => ({
+  start: vi.fn(),
+  onPanEnd: undefined as
+    | undefined
+    | ((e: unknown, info: unknown) => Promise<void>),
+}));
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => mobileState.isMobile,
@@ -35,25 +47,28 @@ vi.mock('framer-motion', async (importOriginal) => {
         dragConstraints: _dragConstraints,
         dragElastic: _dragElastic,
         animate: _animate,
-        onPanEnd: _onPanEnd,
+        onPanEnd,
         ...props
       }: React.ComponentProps<'button'> & {
         drag?: boolean | string;
         dragConstraints?: unknown;
         dragElastic?: unknown;
         animate?: unknown;
-        onPanEnd?: unknown;
-      }) => (
-        <button onClick={onClick} data-drag={String(drag)} {...props}>
-          {children}
-        </button>
-      ),
+        onPanEnd?: (e: unknown, info: unknown) => Promise<void>;
+      }) => {
+        motionState.onPanEnd = onPanEnd;
+        return (
+          <button onClick={onClick} data-drag={String(drag)} {...props}>
+            {children}
+          </button>
+        );
+      },
       p: ({ children, ...props }: React.ComponentProps<'p'>) => (
         <p {...props}>{children}</p>
       ),
     },
     useAnimation: () => ({
-      start: vi.fn(),
+      start: motionState.start,
     }),
   };
 });
@@ -63,6 +78,7 @@ describe('TransactionCard', () => {
     cleanup();
     vi.clearAllMocks();
     mobileState.isMobile = false;
+    motionState.onPanEnd = undefined;
   });
 
   const mockTransaction = {
@@ -202,6 +218,18 @@ describe('TransactionCard', () => {
 
       expect(screen.queryByText('Test Description')).toBeNull();
     });
+
+    it('does not attach a pan handler', () => {
+      render(
+        <TransactionCard
+          transaction={mockTransaction}
+          moneyFormatter={mockMoneyFormatter}
+          editHref="/edit"
+          onDeleteClick={mockOnDelete}
+        />,
+      );
+      expect(motionState.onPanEnd).toBeUndefined();
+    });
   });
 
   describe('on mobile', () => {
@@ -249,6 +277,88 @@ describe('TransactionCard', () => {
       );
       fireEvent.click(body);
       expect(screen.getByText('Test Description')).toBeDefined();
+    });
+
+    const swipeOpen = async () => {
+      await act(async () => {
+        await motionState.onPanEnd?.(null, {
+          offset: { x: -120 },
+          velocity: { x: 0 },
+        });
+      });
+    };
+
+    it('opens the swipe actions when panned past the threshold', async () => {
+      render(
+        <TransactionCard
+          transaction={mockTransaction}
+          moneyFormatter={mockMoneyFormatter}
+          editHref="/edit"
+          onDeleteClick={mockOnDelete}
+        />,
+      );
+      await swipeOpen();
+      expect(motionState.start).toHaveBeenCalledWith({ x: -160 });
+    });
+
+    it('snaps back when panned less than the threshold', async () => {
+      render(
+        <TransactionCard
+          transaction={mockTransaction}
+          moneyFormatter={mockMoneyFormatter}
+          editHref="/edit"
+          onDeleteClick={mockOnDelete}
+        />,
+      );
+      await act(async () => {
+        await motionState.onPanEnd?.(null, {
+          offset: { x: -20 },
+          velocity: { x: 0 },
+        });
+      });
+      expect(motionState.start).toHaveBeenCalledWith({ x: 0 });
+      expect(motionState.start).not.toHaveBeenCalledWith({ x: -160 });
+    });
+
+    it('closes an open swipe on tap without expanding the description', async () => {
+      render(
+        <TransactionCard
+          transaction={mockTransaction}
+          moneyFormatter={mockMoneyFormatter}
+          editHref="/edit"
+          onDeleteClick={mockOnDelete}
+        />,
+      );
+      await swipeOpen();
+      motionState.start.mockClear();
+      fireEvent.click(
+        assertNotNull(screen.getByText('Test Concept').closest('[data-drag]')),
+      );
+      expect(motionState.start).toHaveBeenCalledWith({ x: 0 });
+      expect(screen.queryByText('Test Description')).toBeNull();
+    });
+
+    it('resets an open swipe when the viewport becomes desktop', async () => {
+      const view = render(
+        <TransactionCard
+          transaction={mockTransaction}
+          moneyFormatter={mockMoneyFormatter}
+          editHref="/edit"
+          onDeleteClick={mockOnDelete}
+        />,
+      );
+      await swipeOpen();
+      motionState.start.mockClear();
+      mobileState.isMobile = false;
+      view.rerender(
+        <TransactionCard
+          transaction={mockTransaction}
+          moneyFormatter={mockMoneyFormatter}
+          editHref="/edit"
+          onDeleteClick={mockOnDelete}
+        />,
+      );
+      expect(motionState.start).toHaveBeenCalledWith({ x: 0 });
     });
   });
 });

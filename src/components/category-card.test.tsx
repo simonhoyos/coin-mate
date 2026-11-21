@@ -1,9 +1,21 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
 import type React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CategoryCard } from './category-card';
 
 const mobileState = vi.hoisted(() => ({ isMobile: false }));
+const motionState = vi.hoisted(() => ({
+  start: vi.fn(),
+  onPanEnd: undefined as
+    | undefined
+    | ((e: unknown, info: unknown) => Promise<void>),
+}));
 
 vi.mock('@/hooks/use-mobile', () => ({
   useIsMobile: () => mobileState.isMobile,
@@ -22,22 +34,25 @@ vi.mock('framer-motion', async (importOriginal) => {
         dragConstraints: _dragConstraints,
         dragElastic: _dragElastic,
         animate: _animate,
-        onPanEnd: _onPanEnd,
+        onPanEnd,
         ...props
       }: React.ComponentProps<'button'> & {
         drag?: boolean | string;
         dragConstraints?: unknown;
         dragElastic?: unknown;
         animate?: unknown;
-        onPanEnd?: unknown;
-      }) => (
-        <button onClick={onClick} data-drag={String(drag)} {...props}>
-          {children}
-        </button>
-      ),
+        onPanEnd?: (e: unknown, info: unknown) => Promise<void>;
+      }) => {
+        motionState.onPanEnd = onPanEnd;
+        return (
+          <button onClick={onClick} data-drag={String(drag)} {...props}>
+            {children}
+          </button>
+        );
+      },
     },
     useAnimation: () => ({
-      start: vi.fn(),
+      start: motionState.start,
     }),
   };
 });
@@ -65,6 +80,7 @@ describe('CategoryCard', () => {
     cleanup();
     vi.clearAllMocks();
     mobileState.isMobile = false;
+    motionState.onPanEnd = undefined;
   });
 
   it('renders the name, description, and space name', () => {
@@ -105,6 +121,11 @@ describe('CategoryCard', () => {
         screen.getByRole('button', { name: /groceries/i }).dataset.drag,
       ).toBe('false');
     });
+
+    it('does not attach a pan handler', () => {
+      renderCard();
+      expect(motionState.onPanEnd).toBeUndefined();
+    });
   });
 
   describe('on mobile', () => {
@@ -129,6 +150,56 @@ describe('CategoryCard', () => {
       fireEvent.click(del[0] as HTMLElement);
       expect(onEditClick).toHaveBeenCalledWith('c1');
       expect(onDeleteClick).toHaveBeenCalledWith('c1');
+    });
+
+    const swipeOpen = async () => {
+      await act(async () => {
+        await motionState.onPanEnd?.(null, {
+          offset: { x: -120 },
+          velocity: { x: 0 },
+        });
+      });
+    };
+
+    it('opens the swipe actions when panned past the threshold', async () => {
+      renderCard();
+      await swipeOpen();
+      expect(motionState.start).toHaveBeenCalledWith({ x: -160 });
+    });
+
+    it('snaps back when panned less than the threshold', async () => {
+      renderCard();
+      await act(async () => {
+        await motionState.onPanEnd?.(null, {
+          offset: { x: -20 },
+          velocity: { x: 0 },
+        });
+      });
+      expect(motionState.start).toHaveBeenCalledWith({ x: 0 });
+      expect(motionState.start).not.toHaveBeenCalledWith({ x: -160 });
+    });
+
+    it('closes an open swipe on tap', async () => {
+      renderCard();
+      await swipeOpen();
+      motionState.start.mockClear();
+      fireEvent.click(screen.getByRole('button', { name: /groceries/i }));
+      expect(motionState.start).toHaveBeenCalledWith({ x: 0 });
+    });
+
+    it('resets an open swipe when the viewport becomes desktop', async () => {
+      const view = renderCard();
+      await swipeOpen();
+      motionState.start.mockClear();
+      mobileState.isMobile = false;
+      view.rerender(
+        <CategoryCard
+          category={category}
+          onEditClick={onEditClick}
+          onDeleteClick={onDeleteClick}
+        />,
+      );
+      expect(motionState.start).toHaveBeenCalledWith({ x: 0 });
     });
   });
 });
