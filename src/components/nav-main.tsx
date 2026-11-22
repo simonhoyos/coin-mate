@@ -1,6 +1,5 @@
 'use client';
 
-import type { Icon } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -12,17 +11,10 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import type { NavItem } from './nav-items';
 import { Button } from './ui/button';
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string;
-    url: string;
-    icon?: Icon;
-  }[];
-}) {
+export function NavMain({ items }: { items: readonly NavItem[] }) {
   const { setOpenMobile } = useSidebar();
 
   const onLinkClick = () => {

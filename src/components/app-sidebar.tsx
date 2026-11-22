@@ -1,13 +1,8 @@
 'use client';
 
-import {
-  IconCategory,
-  IconDashboard,
-  IconHistory,
-  IconSpaces,
-} from '@tabler/icons-react';
 import Link from 'next/link';
 import type * as React from 'react';
+import { navItems } from '@/components/nav-items';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -19,36 +14,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useIsMobileResolved } from '@/hooks/use-mobile';
 import { Logo } from './ui/logo';
-
-const data = {
-  navMain: [
-    {
-      title: 'Dashboard',
-      url: '/dashboard',
-      icon: IconDashboard,
-    },
-    {
-      title: 'History',
-      url: '/dashboard/history',
-      icon: IconHistory,
-    },
-    {
-      title: 'Categories',
-      url: '/dashboard/categories',
-      icon: IconCategory,
-    },
-    {
-      title: 'Spaces',
-      url: '/dashboard/spaces',
-      icon: IconSpaces,
-    },
-  ],
-};
 
 export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { email?: string | undefined }) {
+  if (useIsMobileResolved() === true) {
+    return null;
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -67,7 +42,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser email={props.email} />

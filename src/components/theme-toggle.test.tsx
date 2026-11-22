@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { stubResizeObserver } from '@/test/resize-observer';
 import { ThemeToggle } from './theme-toggle';
 
 const { setTheme } = vi.hoisted(() => ({ setTheme: vi.fn() }));
@@ -17,14 +18,7 @@ describe('ThemeToggle', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    stubResizeObserver();
   });
 
   it('renders an accessible toggle button', () => {
