@@ -8,6 +8,7 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BottomNav } from './bottom-nav';
+import { navItems } from './nav-items';
 
 const mobileState = vi.hoisted(() => ({
   isMobile: true as boolean | undefined,
@@ -85,6 +86,29 @@ describe('BottomNav', () => {
       '/dashboard/history',
       '/dashboard/spaces',
     ]);
+  });
+
+  it('has a bar link for every nav item', () => {
+    renderBar();
+
+    const hrefs = within(getBar())
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'));
+    expect([...hrefs].sort()).toEqual(navItems.map((item) => item.url).sort());
+  });
+
+  it('is fixed to the bottom, hidden from md up, and safe-area padded', () => {
+    renderBar();
+
+    const classes = getBar().className.split(/\s+/);
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        'fixed',
+        'bottom-0',
+        'md:hidden',
+        'pb-[env(safe-area-inset-bottom)]',
+      ]),
+    );
   });
 
   it('puts History in the middle styled as the primary button', () => {

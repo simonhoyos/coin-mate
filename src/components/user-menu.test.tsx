@@ -107,17 +107,21 @@ describe('UserMenu', () => {
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('does not redirect when the logout request fails', async () => {
+  it('logs and does not redirect when the logout request fails', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     renderMenu([errorMock()]);
     openMenu();
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await waitFor(() => expect(consoleError).toHaveBeenCalled());
     expect(replace).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

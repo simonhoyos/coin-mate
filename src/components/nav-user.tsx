@@ -5,17 +5,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import { UserAvatar, UserMenu } from './user-menu';
 
 export function NavUser(props: { email?: string | undefined }) {
-  const { isMobile } = useSidebar();
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <UserMenu email={props.email} side={isMobile ? 'bottom' : 'right'}>
+        <UserMenu email={props.email} side="right">
           <SidebarMenuButton
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"

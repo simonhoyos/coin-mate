@@ -37,7 +37,6 @@ export function UserMenu(props: {
   children: React.ReactNode;
   side?: 'top' | 'right' | 'bottom' | 'left' | undefined;
   align?: 'start' | 'center' | 'end' | undefined;
-  contentClassName?: string | undefined;
 }) {
   const router = useRouter();
 
@@ -59,10 +58,7 @@ export function UserMenu(props: {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{props.children}</DropdownMenuTrigger>
       <DropdownMenuContent
-        className={cn(
-          'w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg',
-          props.contentClassName,
-        )}
+        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
         side={props.side ?? 'bottom'}
         align={props.align ?? 'end'}
         sideOffset={4}
@@ -87,8 +83,9 @@ export function UserMenu(props: {
               if (logoutData.data?.userLogout.success === true) {
                 router.replace('/signin');
               }
-            } catch {
-              // A failed request leaves the user signed in on the page.
+            } catch (error) {
+              // The user stays signed in on the page; no toaster is mounted.
+              console.error('Logout failed', error);
             }
           }}
           disabled={logoutState.loading}
