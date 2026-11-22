@@ -144,6 +144,16 @@ describe('BottomNav', () => {
     expect(active[0]?.textContent).toContain('History');
   });
 
+  it('raises the History button above the bar', () => {
+    renderBar();
+
+    const circle = within(getBar())
+      .getByRole('link', { name: 'History' })
+      .querySelector('span');
+    expect(circle?.className).toContain('-mt-6');
+    expect(circle?.className).toContain('size-14');
+  });
+
   it('marks nothing active on a nested route', () => {
     navState.pathname = '/dashboard/history/123';
     renderBar();

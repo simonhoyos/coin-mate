@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ApolloWrapper } from '@/components/apollo-wrapper';
@@ -17,10 +17,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'CoinMate',
   description: 'A expense tracking and budgeting app.',
-};
-
-export const viewport: Viewport = {
-  viewportFit: 'cover',
 };
 
 export default function RootLayout(

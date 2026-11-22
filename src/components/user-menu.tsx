@@ -32,6 +32,17 @@ export function UserAvatar(props: {
   );
 }
 
+export function UserIdentity(props: { email?: string | undefined }) {
+  return (
+    <div className="grid flex-1 text-left text-sm leading-tight">
+      <span className="truncate font-medium">{props.email}</span>
+      <span className="text-muted-foreground truncate text-xs">
+        {props.email}
+      </span>
+    </div>
+  );
+}
+
 export function UserMenu(props: {
   email?: string | undefined;
   children: React.ReactNode;
@@ -66,12 +77,7 @@ export function UserMenu(props: {
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
             <UserAvatar email={props.email} />
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{props.email}</span>
-              <span className="text-muted-foreground truncate text-xs">
-                {props.email}
-              </span>
-            </div>
+            <UserIdentity email={props.email} />
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

@@ -6,7 +6,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { UserAvatar, UserMenu } from './user-menu';
+import { UserAvatar, UserIdentity, UserMenu } from './user-menu';
 
 export function NavUser(props: { email?: string | undefined }) {
   return (
@@ -18,12 +18,7 @@ export function NavUser(props: { email?: string | undefined }) {
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <UserAvatar email={props.email} className="grayscale" />
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{props.email}</span>
-              <span className="text-muted-foreground truncate text-xs">
-                {props.email}
-              </span>
-            </div>
+            <UserIdentity email={props.email} />
             <IconDotsVertical className="ml-auto size-4" />
           </SidebarMenuButton>
         </UserMenu>
