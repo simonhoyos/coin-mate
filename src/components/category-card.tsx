@@ -4,6 +4,7 @@ import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { motion, type PanInfo, useAnimation } from 'framer-motion';
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { useIsMobileResolved } from '@/hooks/use-mobile';
 
 interface Category {
   id: string;
@@ -26,6 +27,9 @@ export function CategoryCard({
   onEditClick,
   onDeleteClick,
 }: CategoryCardProps) {
+  const viewport = useIsMobileResolved();
+  const isMobile = viewport === true;
+  const isDesktop = viewport === false;
   const controls = useAnimation();
   const [isSwipedOpen, setIsSwipedOpen] = React.useState(false);
 
@@ -44,38 +48,47 @@ export function CategoryCard({
     }
   };
 
+  React.useEffect(() => {
+    if (!isMobile && isSwipedOpen) {
+      controls.start({ x: 0 });
+      setIsSwipedOpen(false);
+    }
+  }, [isMobile, isSwipedOpen, controls]);
+
   return (
-    <div className="relative overflow-hidden rounded border shadow-xs group bg-muted">
-      <div className="absolute inset-0 flex justify-end items-stretch">
-        <div className="flex w-[160px]">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => onEditClick(category.id)}
-            className="h-full rounded-none flex-1 px-0 flex flex-col gap-1 items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
-          >
-            <IconPencil size={20} />
-            <span className="text-xs font-medium">Edit</span>
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => onDeleteClick(category.id)}
-            className="bg-destructive text-white h-full rounded-none flex-1 px-0 flex flex-col gap-1 items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors"
-          >
-            <IconTrash size={20} />
-            <span className="text-xs font-medium">Delete</span>
-          </Button>
+    <div className="relative overflow-hidden rounded border shadow-xs bg-muted md:flex md:items-center md:bg-background">
+      {isMobile && (
+        <div className="absolute inset-0 flex justify-end items-stretch">
+          <div className="flex w-[160px]">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onEditClick(category.id)}
+              className="h-full rounded-none flex-1 px-0 flex flex-col gap-1 items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              <IconPencil size={20} />
+              <span className="text-xs font-medium">Edit</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onDeleteClick(category.id)}
+              className="bg-destructive text-white h-full rounded-none flex-1 px-0 flex flex-col gap-1 items-center justify-center hover:bg-destructive hover:text-destructive-foreground transition-colors"
+            >
+              <IconTrash size={20} />
+              <span className="text-xs font-medium">Delete</span>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <motion.div
-        drag="x"
+        drag={isMobile ? 'x' : false}
         dragConstraints={{ left: -1000, right: 0 }}
         dragElastic={0.1}
         animate={controls}
-        onPanEnd={handlePanEnd}
-        className="relative px-4 py-6 bg-background flex flex-col gap-2 cursor-pointer active:cursor-grabbing z-10"
+        {...(isMobile ? { onPanEnd: handlePanEnd } : {})}
+        className="relative px-4 py-6 bg-background flex flex-col gap-2 max-md:cursor-pointer md:flex-1 z-10 max-md:active:cursor-grabbing"
         onClick={() => {
           if (isSwipedOpen) {
             controls.start({ x: 0 });
@@ -92,12 +105,32 @@ export function CategoryCard({
             </p>
           )}
         </div>
-
-        <div className="absolute right-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex gap-1 pointer-events-none">
-          <IconPencil size={14} className="text-muted-foreground" />
-          <IconTrash size={14} className="text-destructive/50" />
-        </div>
       </motion.div>
+
+      {isDesktop && (
+        <div className="flex items-stretch self-stretch bg-background">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Edit"
+            className="h-full w-14 rounded-none cursor-pointer"
+            onClick={() => onEditClick(category.id)}
+          >
+            <IconPencil size={16} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Delete"
+            className="h-full w-14 rounded-none cursor-pointer text-destructive"
+            onClick={() => onDeleteClick(category.id)}
+          >
+            <IconTrash size={16} />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
