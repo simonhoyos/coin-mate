@@ -141,8 +141,13 @@ export function TransactionCard({
       </motion.div>
 
       {isDesktop && (
-        <div className="flex items-center gap-1 px-2 bg-background">
-          <Button variant="ghost" size="icon-sm" asChild>
+        <div className="flex items-stretch self-stretch bg-background">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            asChild
+            className="h-full w-14 rounded-none cursor-pointer"
+          >
             <Link href={editHref}>
               <IconPencil size={16} />
               <span className="sr-only">Edit</span>
@@ -153,7 +158,7 @@ export function TransactionCard({
             variant="ghost"
             size="icon-sm"
             aria-label="Delete"
-            className="text-destructive"
+            className="h-full w-14 rounded-none cursor-pointer text-destructive"
             onClick={() => onDeleteClick(transaction.id)}
           >
             <IconTrash size={16} />

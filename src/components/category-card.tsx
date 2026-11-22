@@ -108,12 +108,13 @@ export function CategoryCard({
       </motion.div>
 
       {isDesktop && (
-        <div className="flex items-center gap-1 px-2 bg-background">
+        <div className="flex items-stretch self-stretch bg-background">
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
             aria-label="Edit"
+            className="h-full w-14 rounded-none cursor-pointer"
             onClick={() => onEditClick(category.id)}
           >
             <IconPencil size={16} />
@@ -123,7 +124,7 @@ export function CategoryCard({
             variant="ghost"
             size="icon-sm"
             aria-label="Delete"
-            className="text-destructive"
+            className="h-full w-14 rounded-none cursor-pointer text-destructive"
             onClick={() => onDeleteClick(category.id)}
           >
             <IconTrash size={16} />
