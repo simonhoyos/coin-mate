@@ -14,11 +14,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useIsMobileResolved } from '@/hooks/use-mobile';
 import { Logo } from './ui/logo';
 
 export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { email?: string | undefined }) {
+  if (useIsMobileResolved() === true) {
+    return null;
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>

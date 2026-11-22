@@ -4,6 +4,7 @@ import { CombinedGraphQLErrors, gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
+import { BottomNav } from '@/components/bottom-nav';
 import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Spinner } from '@/components/ui/spinner';
@@ -60,9 +61,10 @@ export default function DashboardLayout(
       <AppSidebar variant="inset" email={meQuery.data?.me?.email} />
       <SidebarInset>
         <SiteHeader />
-        <div className="@container/main flex flex-1 flex-col py-4 md:py-6 px-4 lg:px-6">
+        <div className="@container/main flex flex-1 flex-col pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:py-6 px-4 lg:px-6">
           {props.children}
         </div>
+        <BottomNav email={meQuery.data?.me?.email} />
       </SidebarInset>
     </SidebarProvider>
   );
