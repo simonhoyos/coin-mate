@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
+import { stubResizeObserver } from '@/test/resize-observer';
 import { AppSidebar } from './app-sidebar';
 
 const mobileState = vi.hoisted(() => ({
@@ -42,14 +43,7 @@ describe('AppSidebar', () => {
   beforeEach(() => {
     cleanup();
     mobileState.isMobile = true;
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    stubResizeObserver();
   });
 
   it('renders nothing on mobile, even when the drawer is opened', () => {

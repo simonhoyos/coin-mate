@@ -7,6 +7,7 @@ import {
   within,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { stubResizeObserver } from '@/test/resize-observer';
 import { BottomNav } from './bottom-nav';
 import { navItems } from './nav-items';
 
@@ -47,14 +48,7 @@ describe('BottomNav', () => {
     vi.clearAllMocks();
     mobileState.isMobile = true;
     navState.pathname = '/dashboard';
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    stubResizeObserver();
   });
 
   it('renders five items in order with links to the nav routes', () => {

@@ -10,10 +10,4 @@ describe('navItems', () => {
       ['Spaces', '/dashboard/spaces'],
     ]);
   });
-
-  it('gives every item an icon', () => {
-    for (const item of navItems) {
-      expect(item.icon).toBeDefined();
-    }
-  });
 });

@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { stubResizeObserver } from '@/test/resize-observer';
 import { SiteHeader } from './site-header';
 
 const mobileState = vi.hoisted(() => ({
@@ -28,14 +29,7 @@ describe('SiteHeader', () => {
   beforeEach(() => {
     cleanup();
     mobileState.isMobile = true;
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    stubResizeObserver();
   });
 
   it('hides the sidebar trigger on mobile and keeps the theme toggle', () => {

@@ -8,6 +8,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { stubResizeObserver } from '@/test/resize-observer';
 import { UserMenu } from './user-menu';
 
 const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -61,14 +62,7 @@ describe('UserMenu', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    stubResizeObserver();
   });
 
   it('renders the custom trigger it is given', () => {

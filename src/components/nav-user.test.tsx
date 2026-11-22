@@ -2,6 +2,7 @@ import { MockedProvider } from '@apollo/client/testing/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { stubResizeObserver } from '@/test/resize-observer';
 import { NavUser } from './nav-user';
 
 vi.mock('@/hooks/use-mobile', () => ({
@@ -16,14 +17,7 @@ vi.mock('next/navigation', () => ({
 describe('NavUser', () => {
   beforeEach(() => {
     cleanup();
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    stubResizeObserver();
   });
 
   it('opens the user menu to the right with a Log out item', () => {

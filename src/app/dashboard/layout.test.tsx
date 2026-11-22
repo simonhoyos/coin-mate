@@ -2,6 +2,7 @@ import { gql } from '@apollo/client';
 import { MockedProvider } from '@apollo/client/testing/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { stubResizeObserver } from '@/test/resize-observer';
 import DashboardLayout from './layout';
 
 const mobileState = vi.hoisted(() => ({
@@ -55,14 +56,7 @@ describe('DashboardLayout', () => {
   beforeEach(() => {
     cleanup();
     mobileState.isMobile = true;
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    stubResizeObserver();
   });
 
   it('shows the bottom bar and no sidebar or trigger on mobile', async () => {
