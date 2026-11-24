@@ -1,6 +1,7 @@
 import { gql } from '@apollo/client';
 import { MockedProvider } from '@apollo/client/testing/react';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -140,6 +141,13 @@ function pressed(group: HTMLElement) {
     .map((button) => button.getAttribute('aria-label'));
 }
 
+async function settle() {
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
+}
+
 async function openCreateDialog() {
   const trigger = await screen.findByRole('button', {
     name: 'Create category',
@@ -197,6 +205,7 @@ describe('CategoriesPage pickers', () => {
     );
 
     await waitFor(() => expect(result).toHaveBeenCalled());
+    await settle();
   });
 
   it('shows the generic icon and grey and sends null when nothing is picked', async () => {
@@ -245,6 +254,7 @@ describe('CategoriesPage pickers', () => {
     );
 
     await waitFor(() => expect(result).toHaveBeenCalled());
+    await settle();
   });
 
   it('shows the stored color circle on the list card', async () => {
@@ -315,6 +325,7 @@ describe('CategoriesPage pickers', () => {
     );
 
     await waitFor(() => expect(result).toHaveBeenCalled());
+    await settle();
   });
 
   it.each([
@@ -369,6 +380,7 @@ describe('CategoriesPage pickers', () => {
       );
 
       await waitFor(() => expect(result).toHaveBeenCalled());
+      await settle();
     },
   );
 });
