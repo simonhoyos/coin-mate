@@ -2,11 +2,37 @@ import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { subDays } from 'date-fns';
 import { assertNotNull } from '@/lib/assert';
+import type { CategoryColor, CategoryIconKey } from '@/lib/category-appearance';
 import { createContextInner } from '@/lib/context.js';
 import { createCategory } from '@/lib/testing/factories/category';
 import { createSpace } from '@/lib/testing/factories/space';
 import { createTransactionLedger } from '@/lib/testing/factories/transaction-ledger';
 import { createUser } from '@/lib/testing/factories/user';
+
+const CATEGORY_APPEARANCES: Record<
+  string,
+  { icon: CategoryIconKey; color: CategoryColor }
+> = {
+  'Food & Dining': { icon: 'tools-kitchen-2', color: '#f97316' },
+  Groceries: { icon: 'shopping-cart', color: '#22c55e' },
+  Transportation: { icon: 'bus', color: '#3b82f6' },
+  Housing: { icon: 'home', color: '#6366f1' },
+  Utilities: { icon: 'bolt', color: '#eab308' },
+  Entertainment: { icon: 'movie', color: '#a855f7' },
+  'Health & Fitness': { icon: 'barbell', color: '#ef4444' },
+  Shopping: { icon: 'shirt', color: '#ec4899' },
+  'Personal Care': { icon: 'heart', color: '#ec4899' },
+  Education: { icon: 'school', color: '#06b6d4' },
+  Travel: { icon: 'plane', color: '#14b8a6' },
+  'Gifts & Donations': { icon: 'gift', color: '#f59e0b' },
+  Investments: { icon: 'building-bank', color: '#3b82f6' },
+  Savings: { icon: 'pig-money', color: '#22c55e' },
+  'Debt Repayment': { icon: 'credit-card', color: '#ef4444' },
+  Insurance: { icon: 'first-aid-kit', color: '#06b6d4' },
+  Taxes: { icon: 'receipt', color: '#6b7280' },
+  'Business Services': { icon: 'briefcase', color: '#6366f1' },
+  Software: { icon: 'device-mobile', color: '#14b8a6' },
+};
 
 const program = new Command();
 
@@ -82,6 +108,7 @@ program
             user_id: userId,
             space_id: spaceId,
             name: categoryName,
+            ...CATEGORY_APPEARANCES[categoryName],
           }),
         ),
       );
