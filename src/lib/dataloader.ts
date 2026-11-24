@@ -7,18 +7,25 @@ export function createLoader<V, K = string, C = K>(
 ) {
   const key = Symbol();
 
-  return (args: { context: IContext; id: K }) => {
-    if (args.context.dl.has(key) !== true) {
+  function getLoader(context: IContext) {
+    if (context.dl.has(key) !== true) {
       const loader = new Dataloader(
-        (keys: readonly K[]) => batchFn({ context: args.context, keys }),
+        (keys: readonly K[]) => batchFn({ context, keys }),
         options,
       );
 
-      args.context.dl.set(key, loader);
+      context.dl.set(key, loader);
     }
 
-    const loader = args.context.dl.get(key) as Dataloader<K, V>;
+    return context.dl.get(key) as Dataloader<K, V>;
+  }
 
-    return loader.load(args.id);
+  const load = (args: { context: IContext; id: K }) =>
+    getLoader(args.context).load(args.id);
+
+  load.clear = (args: { context: IContext; id: K }) => {
+    getLoader(args.context).clear(args.id);
   };
+
+  return load;
 }

@@ -208,6 +208,8 @@ export default function HistoryPage() {
           id: string;
 
           name?: string;
+          icon?: string | null;
+          color?: string | null;
         };
 
         space?: {
@@ -239,6 +241,8 @@ export default function HistoryPage() {
               id
 
               name
+              icon
+              color
             }
 
             space {

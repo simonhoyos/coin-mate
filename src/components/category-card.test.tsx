@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react';
 import type React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { assertNotNull } from '@/lib/assert';
 import { CategoryCard } from './category-card';
 
 const mobileState = vi.hoisted(() => ({
@@ -212,6 +213,63 @@ describe('CategoryCard', () => {
         />,
       );
       expect(motionState.start).toHaveBeenCalledWith({ x: 0 });
+    });
+  });
+
+  describe('category icon', () => {
+    const renderWith = (extra: Record<string, unknown>) =>
+      render(
+        <CategoryCard
+          category={{ ...category, ...extra }}
+          onEditClick={onEditClick}
+          onDeleteClick={onDeleteClick}
+        />,
+      );
+    const circleOf = (container: HTMLElement) =>
+      container.querySelectorAll<HTMLElement>('[data-slot="category-icon"]');
+
+    it('shows the category icon on the category color', () => {
+      const { container } = renderWith({
+        icon: 'shopping-cart',
+        color: '#ef4444',
+      });
+      const circles = circleOf(container);
+      expect(circles).toHaveLength(1);
+      const circle = assertNotNull(circles[0]);
+      expect(circle.querySelector('svg.tabler-icon-shopping-cart')).not.toBe(
+        null,
+      );
+      expect(circle.style.backgroundColor).toBe('rgb(239, 68, 68)');
+    });
+
+    it('shows the generic icon on grey when icon and color are unset', () => {
+      const { container } = renderWith({});
+      const circle = assertNotNull(circleOf(container)[0]);
+      expect(circle.querySelector('svg.tabler-icon-category')).not.toBe(null);
+      expect(circle.style.backgroundColor).toBe('rgb(107, 114, 128)');
+    });
+
+    it('shows the generic icon on grey when icon and color are null', () => {
+      const { container } = renderWith({ icon: null, color: null });
+      const circle = assertNotNull(circleOf(container)[0]);
+      expect(circle.querySelector('svg.tabler-icon-category')).not.toBe(null);
+      expect(circle.style.backgroundColor).toBe('rgb(107, 114, 128)');
+    });
+
+    it('places the circle before the name, inside the drag body', () => {
+      const { container } = renderWith({ icon: 'shopping-cart' });
+      const circle = assertNotNull(circleOf(container)[0]);
+      const body = screen.getByRole('button', { name: /groceries/i });
+      expect(body.contains(circle)).toBe(true);
+      expect(
+        circle.compareDocumentPosition(screen.getByText('groceries')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('keeps the body accessible name with the circle present', () => {
+      renderWith({ icon: 'shopping-cart', color: '#ef4444' });
+      expect(screen.getByRole('button', { name: /groceries/i })).toBeDefined();
     });
   });
 });

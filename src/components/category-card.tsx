@@ -3,6 +3,7 @@
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { motion, type PanInfo, useAnimation } from 'framer-motion';
 import React from 'react';
+import { CategoryIcon } from '@/components/category-icon';
 import { Button } from '@/components/ui/button';
 import { useIsMobileResolved } from '@/hooks/use-mobile';
 
@@ -10,6 +11,8 @@ interface Category {
   id: string;
   name?: string;
   description?: string;
+  icon?: string | null;
+  color?: string | null;
   space?: {
     id: string;
     name?: string;
@@ -96,14 +99,19 @@ export function CategoryCard({
           }
         }}
       >
-        <div className="flex flex-col gap-2 pointer-events-none">
-          <h2 className="font-bold capitalize">{category.name}</h2>
-          {(category.description ?? '') !== '' && <p>{category.description}</p>}
-          {category.space?.name != null && (
-            <p className="text-xs text-muted-foreground">
-              {category.space.name}
-            </p>
-          )}
+        <div className="flex items-center gap-3 pointer-events-none">
+          <CategoryIcon icon={category.icon} color={category.color} />
+          <div className="flex flex-1 min-w-0 flex-col gap-2">
+            <h2 className="font-bold capitalize">{category.name}</h2>
+            {(category.description ?? '') !== '' && (
+              <p>{category.description}</p>
+            )}
+            {category.space?.name != null && (
+              <p className="text-xs text-muted-foreground">
+                {category.space.name}
+              </p>
+            )}
+          </div>
         </div>
       </motion.div>
 

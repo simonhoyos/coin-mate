@@ -4,6 +4,7 @@ import { IconPencil, IconTrash } from '@tabler/icons-react';
 import { motion, type PanInfo, useAnimation } from 'framer-motion';
 import Link from 'next/link';
 import React from 'react';
+import { CategoryIcon } from '@/components/category-icon';
 import { Button } from '@/components/ui/button';
 import { useIsMobileResolved } from '@/hooks/use-mobile';
 
@@ -18,6 +19,8 @@ interface Transaction {
   category?: {
     id: string;
     name?: string;
+    icon?: string | null;
+    color?: string | null;
   };
   space?: {
     id: string;
@@ -112,20 +115,26 @@ export function TransactionCard({
           }
         }}
       >
-        <div className="flex justify-between items-start pointer-events-none">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-muted-foreground">
-              {transaction.category?.name}
-              {` (${transaction.type})`}
-              {transaction.space?.name != null &&
-                ` • ${transaction.space.name}`}
-            </p>
-            <h2 className="font-bold">{transaction.concept}</h2>
-          </div>
-          <div className="text-right">
-            <p className="font-medium">
-              {moneyFormatter.format((transaction.amount_cents ?? 0) / 100)}
-            </p>
+        <div className="flex items-center gap-3 pointer-events-none">
+          <CategoryIcon
+            icon={transaction.category?.icon}
+            color={transaction.category?.color}
+          />
+          <div className="flex flex-1 min-w-0 justify-between items-start">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-muted-foreground">
+                {transaction.category?.name}
+                {` (${transaction.type})`}
+                {transaction.space?.name != null &&
+                  ` • ${transaction.space.name}`}
+              </p>
+              <h2 className="font-bold">{transaction.concept}</h2>
+            </div>
+            <div className="text-right">
+              <p className="font-medium">
+                {moneyFormatter.format((transaction.amount_cents ?? 0) / 100)}
+              </p>
+            </div>
           </div>
         </div>
 

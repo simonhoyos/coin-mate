@@ -9,6 +9,8 @@ export const typeDefs = `#graphql
 
     name: String
     description: String
+    icon: String
+    color: String
 
     space: Space
 
@@ -31,6 +33,8 @@ export const typeDefs = `#graphql
   input CategoryCreateInput {
     name: String!
     description: String
+    icon: String
+    color: String
     space_id: UUID!
   }
 
@@ -38,6 +42,8 @@ export const typeDefs = `#graphql
     id: UUID!
     name: String
     description: String
+    icon: String
+    color: String
   }
 
   input CategoryDeleteInput {
@@ -67,6 +73,16 @@ export const resolvers = {
     description: (parent: { id: string }, _args: never, context: IContext) =>
       Category.gen({ context, id: parent.id }).then(
         (category) => category?.description,
+      ),
+
+    icon: (parent: { id: string }, _args: never, context: IContext) =>
+      Category.gen({ context, id: parent.id }).then(
+        (category) => category?.icon ?? null,
+      ),
+
+    color: (parent: { id: string }, _args: never, context: IContext) =>
+      Category.gen({ context, id: parent.id }).then(
+        (category) => category?.color ?? null,
       ),
 
     space: (parent: { id: string }, _args: never, context: IContext) =>
@@ -191,16 +207,26 @@ export const resolvers = {
   Mutation: {
     async categoryCreate(
       _parent: never,
-      args: { input: { name: string; description?: string; space_id: string } },
+      args: {
+        input: {
+          name: string;
+          description?: string;
+          icon?: string | null;
+          color?: string | null;
+          space_id: string;
+        };
+      },
       context: IContext,
     ) {
-      const { name, description, space_id } = args.input;
+      const { name, description, icon, color, space_id } = args.input;
 
       const createResult = await Category.create({
         context,
         data: {
           name,
           description,
+          icon,
+          color,
           space_id,
         },
       });
@@ -212,10 +238,18 @@ export const resolvers = {
 
     async categoryUpdate(
       _parent: never,
-      args: { input: { id: string; name: string; description?: string } },
+      args: {
+        input: {
+          id: string;
+          name: string;
+          description?: string;
+          icon?: string | null;
+          color?: string | null;
+        };
+      },
       context: IContext,
     ) {
-      const { id, name, description } = args.input;
+      const { id, name, description, icon, color } = args.input;
 
       const updateResult = await Category.update({
         context,
@@ -223,6 +257,8 @@ export const resolvers = {
           id,
           name,
           description,
+          icon,
+          color,
         },
       });
 

@@ -8,6 +8,7 @@ import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
 import React from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { CategoryAppearanceFields } from '@/components/category-appearance-fields';
 import { CategoryCard } from '@/components/category-card';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,17 +34,27 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  CategoryColorSchema,
+  CategoryIconSchema,
+  isCategoryColor,
+  isCategoryIconKey,
+} from '@/lib/category-appearance';
 
 const CategoryCreateFormSchema = z.object({
   name: z.string().min(1).max(32),
   description: z.string().max(256).optional(),
   space_id: z.string().min(1),
+  icon: CategoryIconSchema.nullable(),
+  color: CategoryColorSchema.nullable(),
 });
 
 const CategoryUpdateFormSchema = z.object({
   id: z.uuid(),
   name: z.string().min(1).max(32).optional(),
   description: z.string().max(256).optional(),
+  icon: CategoryIconSchema.nullable(),
+  color: CategoryColorSchema.nullable(),
 });
 
 export default function CategoriesPage() {
@@ -84,6 +95,8 @@ export default function CategoriesPage() {
 
         name?: string;
         description?: string;
+        icon?: string | null;
+        color?: string | null;
 
         space?: {
           id: string;
@@ -100,6 +113,8 @@ export default function CategoriesPage() {
 
             name
             description
+            icon
+            color
 
             space {
               id
@@ -113,6 +128,10 @@ export default function CategoriesPage() {
 
   const categoryListData =
     categoryListQuery.data?.allCategoriesList?.edges ?? [];
+  const editingCategory =
+    editingCategoryId != null
+      ? categoryListData.find((c) => c.id === editingCategoryId)
+      : undefined;
 
   const [categoryCreateMutation, categoryCreateState] = useMutation<
     {
@@ -121,6 +140,8 @@ export default function CategoriesPage() {
 
         name?: string;
         description?: string;
+        icon?: string | null;
+        color?: string | null;
       };
     },
     {
@@ -128,6 +149,8 @@ export default function CategoriesPage() {
         name: string;
         description: string | undefined;
         space_id: string;
+        icon: string | null;
+        color: string | null;
       };
     }
   >(
@@ -137,6 +160,8 @@ export default function CategoriesPage() {
           id
           name
           description
+          icon
+          color
         }
       }
     `,
@@ -147,6 +172,8 @@ export default function CategoriesPage() {
       name: '',
       description: '',
       space_id: spaceListData[0]?.id ?? '',
+      icon: null as string | null,
+      color: null as string | null,
     }),
     [spaceListData[0]?.id],
   );
@@ -179,6 +206,8 @@ export default function CategoriesPage() {
           name: data.name,
           description: data.description,
           space_id: data.space_id,
+          icon: data.icon,
+          color: data.color,
         },
       },
     });
@@ -200,7 +229,7 @@ export default function CategoriesPage() {
               <span>Create category</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90dvh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create a new category</DialogTitle>
             </DialogHeader>
@@ -244,6 +273,10 @@ export default function CategoriesPage() {
                       )}
                     </Field>
                   )}
+                />
+                <CategoryAppearanceFields
+                  control={categoryCreateForm.control}
+                  idPrefix="create"
                 />
                 <Controller
                   name="space_id"
@@ -326,16 +359,13 @@ export default function CategoriesPage() {
               onDeleteClick={(id) => setDeletingCategoryId(id)}
             />
           ))}
-          {editingCategoryId != null && (
+          {editingCategory != null && (
             <CategoryUpdateAction
-              id={editingCategoryId}
-              name={
-                categoryListData.find((c) => c.id === editingCategoryId)?.name
-              }
-              description={
-                categoryListData.find((c) => c.id === editingCategoryId)
-                  ?.description
-              }
+              id={editingCategory.id}
+              name={editingCategory.name}
+              description={editingCategory.description}
+              icon={editingCategory.icon}
+              color={editingCategory.color}
               refetch={categoryListQuery.refetch}
               open={true}
               onOpenChange={(isOpen) => {
@@ -364,6 +394,8 @@ function CategoryUpdateAction(props: {
 
   name: string | undefined;
   description: string | undefined;
+  icon: string | null | undefined;
+  color: string | null | undefined;
 
   refetch: () => Promise<unknown>;
   open: boolean;
@@ -376,6 +408,8 @@ function CategoryUpdateAction(props: {
 
         name?: string;
         description?: string;
+        icon?: string | null;
+        color?: string | null;
       };
     },
     {
@@ -383,6 +417,8 @@ function CategoryUpdateAction(props: {
         id: string;
         name: string | undefined;
         description: string | undefined;
+        icon: string | null;
+        color: string | null;
       };
     }
   >(
@@ -392,6 +428,8 @@ function CategoryUpdateAction(props: {
           id
           name
           description
+          icon
+          color
         }
       }
     `,
@@ -402,8 +440,11 @@ function CategoryUpdateAction(props: {
       id: props.id,
       name: props.name ?? '',
       description: props.description ?? '',
+      // null means unset; unknown stored values fall back to unset
+      icon: isCategoryIconKey(props.icon) ? props.icon : null,
+      color: isCategoryColor(props.color) ? props.color : null,
     }),
-    [props.id, props.name, props.description],
+    [props.id, props.name, props.description, props.icon, props.color],
   );
 
   const categoryUpdateForm = useForm({
@@ -421,6 +462,8 @@ function CategoryUpdateAction(props: {
           id: data.id,
           name: data.name,
           description: data.description,
+          icon: data.icon,
+          color: data.color,
         },
       },
     });
@@ -432,7 +475,7 @@ function CategoryUpdateAction(props: {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Update an existing category</DialogTitle>
         </DialogHeader>
@@ -476,6 +519,10 @@ function CategoryUpdateAction(props: {
                   )}
                 </Field>
               )}
+            />
+            <CategoryAppearanceFields
+              control={categoryUpdateForm.control}
+              idPrefix="update"
             />
             <Field>
               <div className="flex flex-1 gap-2">
