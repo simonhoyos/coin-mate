@@ -26,6 +26,7 @@ export async function createTestContext() {
     login(user: User | undefined) {
       return {
         ...context,
+        dl: new Map<symbol, Dataloader<unknown, unknown>>(),
         ...(user?.id != null
           ? {
               user: {

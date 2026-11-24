@@ -31,9 +31,12 @@ describe('models/category', () => {
       description: 'a'.repeat(257),
       reason: 'description too long',
     },
+    { name: 'valid name', icon: 'not-an-icon', reason: 'unknown icon' },
+    { name: 'valid name', color: '#123456', reason: 'non-palette color' },
+    { name: 'valid name', color: 'red', reason: 'color is not hex' },
   ])(
     'fails to create category with validation error: ($reason)',
-    async ({ name, description }) => {
+    async ({ name, description, icon, color }) => {
       const user = assertNotNull(await createUser(context.services.knex));
       const contextWithUser = context.login(user);
 
@@ -44,6 +47,8 @@ describe('models/category', () => {
             // @ts-expect-error undefined is not assignable to name
             name,
             description,
+            icon,
+            color,
           },
         }),
       ).rejects.toThrow(ZodError);
@@ -58,9 +63,12 @@ describe('models/category', () => {
       description: 'a'.repeat(257),
       reason: 'description too long',
     },
+    { name: 'valid name', icon: 'not-an-icon', reason: 'unknown icon' },
+    { name: 'valid name', color: '#123456', reason: 'non-palette color' },
+    { name: 'valid name', color: 'red', reason: 'color is not hex' },
   ])(
     'fails to update category with validation error: ($reason)',
-    async ({ name, description }) => {
+    async ({ name, description, icon, color }) => {
       const user = assertNotNull(await createUser(context.services.knex));
       const contextWithUser = context.login(user);
 
@@ -84,6 +92,8 @@ describe('models/category', () => {
             id: category.id,
             name,
             description,
+            icon,
+            color,
           },
         }),
       ).rejects.toThrow(ZodError);
@@ -176,6 +186,8 @@ describe('models/category', () => {
     expect(updatedAuditLog?.data.payload).toMatchObject(
       expect.objectContaining({
         ...omit(updatedCategory, [
+          'icon',
+          'color',
           'created_at',
           'updated_at',
           'archived_at',
@@ -320,6 +332,217 @@ describe('models/category', () => {
         },
       }),
     ).rejects.toThrow('User must be authenticated to delete a category');
+  });
+
+  describe('icon and color', () => {
+    async function setup() {
+      const user = assertNotNull(await createUser(context.services.knex));
+      const space = assertNotNull(
+        await createSpace(context.services.knex, { user_id: user.id }),
+      );
+
+      return { user, space, contextWithUser: context.login(user) };
+    }
+
+    it('creates a category with icon and color', async () => {
+      const { user, space, contextWithUser } = await setup();
+
+      const created = assertNotNull(
+        (
+          await Category.create({
+            context: contextWithUser,
+            data: {
+              name: 'with appearance',
+              space_id: space.id,
+              icon: 'coffee',
+              color: '#ef4444',
+            },
+          })
+        ).category,
+      );
+
+      expect(created.icon).toBe('coffee');
+      expect(created.color).toBe('#ef4444');
+
+      const fetched = assertNotNull(
+        await Category.gen({
+          context: context.login(user),
+          id: created.id,
+        }),
+      );
+
+      expect(fetched.icon).toBe('coffee');
+      expect(fetched.color).toBe('#ef4444');
+
+      const auditLog = await context.services
+        .knex<Audit>('audit')
+        .where({
+          object_id: created.id,
+          object: 'category',
+          operation: 'create',
+        })
+        .first();
+
+      expect(auditLog?.data.payload).toMatchObject({
+        icon: 'coffee',
+        color: '#ef4444',
+      });
+    });
+
+    it('stores null icon and color when omitted on create', async () => {
+      const { user, space, contextWithUser } = await setup();
+
+      const created = assertNotNull(
+        (
+          await Category.create({
+            context: contextWithUser,
+            data: { name: 'plain', space_id: space.id },
+          })
+        ).category,
+      );
+
+      expect(created.icon).toBeNull();
+      expect(created.color).toBeNull();
+
+      const fetched = assertNotNull(
+        await Category.gen({ context: context.login(user), id: created.id }),
+      );
+
+      expect(fetched.icon).toBeNull();
+      expect(fetched.color).toBeNull();
+    });
+
+    it('updates icon and color', async () => {
+      const { user, space, contextWithUser } = await setup();
+
+      const category = assertNotNull(
+        await createCategory(context.services.knex, {
+          user_id: user.id,
+          space_id: space.id,
+        }),
+      );
+
+      const updated = assertNotNull(
+        (
+          await Category.update({
+            context: contextWithUser,
+            data: {
+              id: category.id,
+              name: 'renamed',
+              icon: 'car',
+              color: '#3b82f6',
+            },
+          })
+        ).category,
+      );
+
+      expect(updated.icon).toBe('car');
+      expect(updated.color).toBe('#3b82f6');
+
+      const fetched = assertNotNull(
+        await Category.gen({ context: context.login(user), id: category.id }),
+      );
+
+      expect(fetched.icon).toBe('car');
+      expect(fetched.color).toBe('#3b82f6');
+
+      const auditLog = await context.services
+        .knex<Audit>('audit')
+        .where({
+          object_id: category.id,
+          object: 'category',
+          operation: 'update',
+        })
+        .orderBy('created_at', 'desc')
+        .first();
+
+      expect(auditLog?.data.payload).toMatchObject({
+        icon: 'car',
+        color: '#3b82f6',
+      });
+    });
+
+    it('leaves icon and color unchanged when only the name is sent', async () => {
+      const { user, space, contextWithUser } = await setup();
+
+      const category = assertNotNull(
+        await createCategory(context.services.knex, {
+          user_id: user.id,
+          space_id: space.id,
+          icon: 'home',
+          color: '#22c55e',
+        }),
+      );
+
+      await Category.update({
+        context: contextWithUser,
+        data: { id: category.id, name: 'only name' },
+      });
+
+      const fetched = assertNotNull(
+        await Category.gen({ context: context.login(user), id: category.id }),
+      );
+
+      expect(fetched.name).toBe('only name');
+      expect(fetched.icon).toBe('home');
+      expect(fetched.color).toBe('#22c55e');
+    });
+
+    it('does not throw when an update changes nothing', async () => {
+      const { user, space, contextWithUser } = await setup();
+
+      const category = assertNotNull(
+        await createCategory(context.services.knex, {
+          user_id: user.id,
+          space_id: space.id,
+          name: 'same name',
+          description: 'same description',
+        }),
+      );
+
+      const result = await Category.update({
+        context: contextWithUser,
+        data: {
+          id: category.id,
+          name: 'same name',
+          description: 'same description',
+          icon: undefined,
+          color: undefined,
+        },
+      });
+
+      expect(result.category?.id).toBe(category.id);
+    });
+
+    it('clears icon and color when null is sent', async () => {
+      const { user, space, contextWithUser } = await setup();
+
+      const category = assertNotNull(
+        await createCategory(context.services.knex, {
+          user_id: user.id,
+          space_id: space.id,
+          icon: 'home',
+          color: '#22c55e',
+        }),
+      );
+
+      await Category.update({
+        context: contextWithUser,
+        data: {
+          id: category.id,
+          name: category.name,
+          icon: null,
+          color: null,
+        },
+      });
+
+      const fetched = assertNotNull(
+        await Category.gen({ context: context.login(user), id: category.id }),
+      );
+
+      expect(fetched.icon).toBeNull();
+      expect(fetched.color).toBeNull();
+    });
   });
 
   it('filters report by month and year', async () => {

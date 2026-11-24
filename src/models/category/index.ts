@@ -1,7 +1,8 @@
 import { addMonths, set } from 'date-fns';
-import { isEmpty, pick } from 'lodash';
+import { isEmpty, isUndefined, omitBy, pick } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
+import { isCategoryColor, isCategoryIconKey } from '@/lib/category-appearance';
 import { createLoader } from '@/lib/dataloader';
 import { getObjectDiff } from '@/lib/diff';
 import type { IContext } from '@/lib/types';
@@ -16,6 +17,8 @@ export class Category {
 
   name!: string;
   description?: string | undefined;
+  icon?: string | null;
+  color?: string | null;
 
   user_id!: string;
   space_id!: string;
@@ -34,7 +37,7 @@ export class Category {
         .knex('space_user')
         .where({ user_id: args.context.user?.id, space_id: record?.space_id })
         .whereNull('archived_at')
-        .first()) !== null
+        .first()) != null
       ? record
       : null;
   }
@@ -64,6 +67,8 @@ export class Category {
         const payload = {
           name: parsedData.name,
           description: parsedData.description,
+          icon: parsedData.icon ?? null,
+          color: parsedData.color ?? null,
           user_id: userId,
           space_id: parsedData.space_id,
         };
@@ -135,7 +140,10 @@ export class Category {
 
         const payload = getObjectDiff(
           categoryToUpdate as unknown as Record<string, unknown>,
-          pick(parsedData, ['name', 'description']),
+          omitBy(
+            pick(parsedData, ['name', 'description', 'icon', 'color']),
+            isUndefined,
+          ),
         );
 
         if (isEmpty(payload) === true) {
@@ -243,6 +251,8 @@ const CategoryCreateSchema = z.object({
     .max(32)
     .transform((val) => val.toLowerCase()),
   description: z.string().max(256).optional(),
+  icon: z.string().refine(isCategoryIconKey).nullish(),
+  color: z.string().refine(isCategoryColor).nullish(),
   space_id: z.uuid(),
 });
 
@@ -255,6 +265,8 @@ const CategoryUpdateSchema = z.object({
     .transform((val) => val.toLowerCase())
     .optional(),
   description: z.string().max(256).optional(),
+  icon: z.string().refine(isCategoryIconKey).nullish(),
+  color: z.string().refine(isCategoryColor).nullish(),
 });
 
 const CategoryDeleteSchema = z.object({
@@ -269,13 +281,15 @@ const getCategoryById = createLoader(
         'category.id',
         'category.name',
         'category.description',
+        'category.icon',
+        'category.color',
         'category.user_id',
         'category.space_id',
       ])
       .whereIn('category.id', args.keys)
       .whereNull('category.archived_at')) as unknown as Pick<
       Category,
-      'id' | 'name' | 'description' | 'user_id' | 'space_id'
+      'id' | 'name' | 'description' | 'icon' | 'color' | 'user_id' | 'space_id'
     >[];
 
     return args.keys.map((key) => {
