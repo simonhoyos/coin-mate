@@ -440,6 +440,7 @@ function CategoryUpdateAction(props: {
       id: props.id,
       name: props.name ?? '',
       description: props.description ?? '',
+      // null means unset; unknown stored values fall back to unset
       icon: isCategoryIconKey(props.icon) ? props.icon : null,
       color: isCategoryColor(props.color) ? props.color : null,
     }),

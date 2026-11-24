@@ -247,6 +247,20 @@ describe('CategoriesPage pickers', () => {
     await waitFor(() => expect(result).toHaveBeenCalled());
   });
 
+  it('shows the stored color circle on the list card', async () => {
+    renderPage({
+      request: { query: updateMutation, variables: { input: {} } },
+      result: { data: {} },
+    });
+
+    await screen.findByText('Transport');
+    const circle = document.querySelector<HTMLElement>(
+      '[data-slot="category-icon"]',
+    );
+
+    expect(circle?.style.backgroundColor).toBe('rgb(59, 130, 246)');
+  });
+
   it('seeds the update dialog from the stored icon and color', async () => {
     renderPage({
       request: { query: updateMutation, variables: { input: {} } },

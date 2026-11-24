@@ -9,30 +9,32 @@ import { createSpace } from '@/lib/testing/factories/space';
 import { createTransactionLedger } from '@/lib/testing/factories/transaction-ledger';
 import { createUser } from '@/lib/testing/factories/user';
 
-const CATEGORY_APPEARANCES: Record<
-  string,
-  { icon: CategoryIconKey; color: CategoryColor }
-> = {
-  'Food & Dining': { icon: 'tools-kitchen-2', color: '#f97316' },
-  Groceries: { icon: 'shopping-cart', color: '#22c55e' },
-  Transportation: { icon: 'bus', color: '#3b82f6' },
-  Housing: { icon: 'home', color: '#6366f1' },
-  Utilities: { icon: 'bolt', color: '#eab308' },
-  Entertainment: { icon: 'movie', color: '#a855f7' },
-  'Health & Fitness': { icon: 'barbell', color: '#ef4444' },
-  Shopping: { icon: 'shirt', color: '#ec4899' },
-  'Personal Care': { icon: 'heart', color: '#ec4899' },
-  Education: { icon: 'school', color: '#06b6d4' },
-  Travel: { icon: 'plane', color: '#14b8a6' },
-  'Gifts & Donations': { icon: 'gift', color: '#f59e0b' },
-  Investments: { icon: 'building-bank', color: '#3b82f6' },
-  Savings: { icon: 'pig-money', color: '#22c55e' },
-  'Debt Repayment': { icon: 'credit-card', color: '#ef4444' },
-  Insurance: { icon: 'first-aid-kit', color: '#06b6d4' },
-  Taxes: { icon: 'receipt', color: '#6b7280' },
-  'Business Services': { icon: 'briefcase', color: '#6366f1' },
-  Software: { icon: 'device-mobile', color: '#14b8a6' },
-};
+const SEED_CATEGORIES: {
+  name: string;
+  icon?: CategoryIconKey;
+  color?: CategoryColor;
+}[] = [
+  { name: 'Food & Dining', icon: 'tools-kitchen-2', color: '#f97316' },
+  { name: 'Groceries', icon: 'shopping-cart', color: '#22c55e' },
+  { name: 'Transportation', icon: 'bus', color: '#3b82f6' },
+  { name: 'Housing', icon: 'home', color: '#6366f1' },
+  { name: 'Utilities', icon: 'bolt', color: '#eab308' },
+  { name: 'Entertainment', icon: 'movie', color: '#a855f7' },
+  { name: 'Health & Fitness', icon: 'barbell', color: '#ef4444' },
+  { name: 'Shopping', icon: 'shirt', color: '#ec4899' },
+  { name: 'Personal Care', icon: 'heart', color: '#ec4899' },
+  { name: 'Education', icon: 'school', color: '#06b6d4' },
+  { name: 'Travel', icon: 'plane', color: '#14b8a6' },
+  { name: 'Gifts & Donations', icon: 'gift', color: '#f59e0b' },
+  { name: 'Investments', icon: 'building-bank', color: '#3b82f6' },
+  { name: 'Savings', icon: 'pig-money', color: '#22c55e' },
+  { name: 'Debt Repayment', icon: 'credit-card', color: '#ef4444' },
+  { name: 'Insurance', icon: 'first-aid-kit', color: '#06b6d4' },
+  { name: 'Taxes', icon: 'receipt', color: '#6b7280' },
+  { name: 'Business Services', icon: 'briefcase', color: '#6366f1' },
+  { name: 'Software', icon: 'device-mobile', color: '#14b8a6' },
+  { name: 'Miscellaneous' },
+];
 
 const program = new Command();
 
@@ -82,33 +84,11 @@ program
 
       // 3. Create Categories
       const categories = await Promise.all(
-        [
-          'Food & Dining',
-          'Groceries',
-          'Transportation',
-          'Housing',
-          'Utilities',
-          'Entertainment',
-          'Health & Fitness',
-          'Shopping',
-          'Personal Care',
-          'Education',
-          'Travel',
-          'Gifts & Donations',
-          'Investments',
-          'Savings',
-          'Debt Repayment',
-          'Insurance',
-          'Taxes',
-          'Business Services',
-          'Software',
-          'Miscellaneous',
-        ].map(async (categoryName) =>
+        SEED_CATEGORIES.map(async (seedCategory) =>
           createCategory(context.services.knex, {
             user_id: userId,
             space_id: spaceId,
-            name: categoryName,
-            ...CATEGORY_APPEARANCES[categoryName],
+            ...seedCategory,
           }),
         ),
       );

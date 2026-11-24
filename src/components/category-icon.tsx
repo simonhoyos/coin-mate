@@ -37,6 +37,7 @@ import {
   IconWifi,
 } from '@tabler/icons-react';
 import {
+  type CategoryColor,
   type CategoryIconKey,
   resolveCategoryAppearance,
 } from '@/lib/category-appearance';
@@ -83,13 +84,14 @@ const CATEGORY_ICON_COMPONENTS: Record<CategoryIconKey, Icon> = {
 const LIGHT_FOREGROUND = '#ffffff';
 const DARK_FOREGROUND = '#111827';
 const MIN_CONTRAST = 3;
+const ICON_SIZE_RATIO = 0.55;
 
 function channelToLinear(channel: number): number {
   const c = channel / 255;
   return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 }
 
-export function getCategoryIconForeground(color: string): string {
+export function getCategoryIconForeground(color: CategoryColor): string {
   const hex = color.replace('#', '');
   const linear = (start: number) =>
     channelToLinear(Number.parseInt(hex.slice(start, start + 2), 16));
@@ -127,7 +129,7 @@ export function CategoryIcon({
       style={{ backgroundColor: resolved.color, width: size, height: size }}
     >
       <IconComponent
-        size={Math.round(size * 0.55)}
+        size={Math.round(size * ICON_SIZE_RATIO)}
         color={getCategoryIconForeground(resolved.color)}
         stroke={2}
       />
