@@ -84,6 +84,8 @@ export default function CategoriesPage() {
 
         name?: string;
         description?: string;
+        icon?: string | null;
+        color?: string | null;
 
         space?: {
           id: string;
@@ -100,6 +102,8 @@ export default function CategoriesPage() {
 
             name
             description
+            icon
+            color
 
             space {
               id

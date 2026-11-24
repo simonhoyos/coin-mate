@@ -279,4 +279,67 @@ describe('TransactionCard', () => {
       expect(motionState.start).toHaveBeenCalledWith({ x: 0 });
     });
   });
+
+  describe('category icon', () => {
+    const renderWith = (transaction: Record<string, unknown>) =>
+      render(
+        <TransactionCard
+          transaction={{ ...mockTransaction, ...transaction }}
+          moneyFormatter={mockMoneyFormatter}
+          editHref="/edit"
+          onDeleteClick={mockOnDelete}
+        />,
+      );
+    const circleOf = (container: HTMLElement) =>
+      container.querySelectorAll<HTMLElement>('[data-slot="category-icon"]');
+
+    it('shows the category icon on the category color', () => {
+      const { container } = renderWith({
+        category: {
+          id: 'cat1',
+          name: 'Food',
+          icon: 'shopping-cart',
+          color: '#ef4444',
+        },
+      });
+      const circles = circleOf(container);
+      expect(circles).toHaveLength(1);
+      const circle = assertNotNull(circles[0]);
+      expect(circle.querySelector('svg.tabler-icon-shopping-cart')).not.toBe(
+        null,
+      );
+      expect(circle.style.backgroundColor).toBe('rgb(239, 68, 68)');
+    });
+
+    it('shows the generic icon on grey when the category has no icon or color', () => {
+      const { container } = renderWith({
+        category: { id: 'cat1', name: 'Food', icon: null, color: null },
+      });
+      const circle = assertNotNull(circleOf(container)[0]);
+      expect(circle.querySelector('svg.tabler-icon-category')).not.toBe(null);
+      expect(circle.style.backgroundColor).toBe('rgb(107, 114, 128)');
+    });
+
+    it('shows the default circle when the transaction has no category', () => {
+      const { container } = renderWith({ category: undefined });
+      const circles = circleOf(container);
+      expect(circles).toHaveLength(1);
+      const circle = assertNotNull(circles[0]);
+      expect(circle.querySelector('svg.tabler-icon-category')).not.toBe(null);
+      expect(circle.style.backgroundColor).toBe('rgb(107, 114, 128)');
+    });
+
+    it('places the circle before the content, inside the drag body', () => {
+      const { container } = renderWith({});
+      const circle = assertNotNull(circleOf(container)[0]);
+      const concept = screen.getByText('Test Concept');
+      expect(circle.closest('[data-drag]')).toBe(
+        concept.closest('[data-drag]'),
+      );
+      expect(
+        circle.compareDocumentPosition(concept) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
 });
