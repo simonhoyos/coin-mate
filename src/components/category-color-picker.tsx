@@ -25,7 +25,7 @@ export function CategoryColorPicker(props: {
       getLabel={(hex) => CATEGORY_COLOR_NAMES[hex]}
       onChange={props.onChange}
       renderOption={(hex) => (
-        <CategoryIcon icon={props.icon ?? null} color={hex} size={32} />
+        <CategoryIcon icon={props.icon} color={hex} size={32} />
       )}
     />
   );

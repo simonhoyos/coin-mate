@@ -31,7 +31,7 @@ export function CategoryIconPicker(props: {
       getLabel={getIconLabel}
       onChange={props.onChange}
       renderOption={(key) => (
-        <CategoryIcon icon={key} color={props.color ?? null} size={32} />
+        <CategoryIcon icon={key} color={props.color} size={32} />
       )}
     />
   );

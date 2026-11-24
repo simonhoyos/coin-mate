@@ -279,6 +279,39 @@ describe('models/category', () => {
     ).rejects.toThrow('Category not found');
   });
 
+  it('A user whose space membership is archived cannot read the category', async () => {
+    const user = assertNotNull(await createUser(context.services.knex));
+
+    const space = assertNotNull(
+      await createSpace(context.services.knex, { user_id: user.id }),
+    );
+
+    const category = assertNotNull(
+      await createCategory(context.services.knex, {
+        user_id: user.id,
+        space_id: space.id,
+      }),
+    );
+
+    const contextWithUser = context.login(user);
+
+    expect(
+      (await Category.gen({ context: contextWithUser, id: category.id }))?.id,
+    ).toBe(category.id);
+
+    await context.services
+      .knex('space_user')
+      .where({ user_id: user.id, space_id: space.id })
+      .update({ archived_at: new Date() });
+
+    expect(
+      (await Category.gen({
+        context: context.login(user),
+        id: category.id,
+      })) == null,
+    ).toBeTruthy();
+  });
+
   it('Unauthenticated user is not authorized to create/read/update/delete categories', async () => {
     const user = assertNotNull(await createUser(context.services.knex));
 

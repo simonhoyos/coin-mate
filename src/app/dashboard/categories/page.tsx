@@ -34,22 +34,27 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { isCategoryColor, isCategoryIconKey } from '@/lib/category-appearance';
+import {
+  CategoryColorSchema,
+  CategoryIconSchema,
+  isCategoryColor,
+  isCategoryIconKey,
+} from '@/lib/category-appearance';
 
 const CategoryCreateFormSchema = z.object({
   name: z.string().min(1).max(32),
   description: z.string().max(256).optional(),
   space_id: z.string().min(1),
-  icon: z.string().refine(isCategoryIconKey).nullable(),
-  color: z.string().refine(isCategoryColor).nullable(),
+  icon: CategoryIconSchema.nullable(),
+  color: CategoryColorSchema.nullable(),
 });
 
 const CategoryUpdateFormSchema = z.object({
   id: z.uuid(),
   name: z.string().min(1).max(32).optional(),
   description: z.string().max(256).optional(),
-  icon: z.string().refine(isCategoryIconKey).nullable(),
-  color: z.string().refine(isCategoryColor).nullable(),
+  icon: CategoryIconSchema.nullable(),
+  color: CategoryColorSchema.nullable(),
 });
 
 export default function CategoriesPage() {
@@ -123,6 +128,10 @@ export default function CategoriesPage() {
 
   const categoryListData =
     categoryListQuery.data?.allCategoriesList?.edges ?? [];
+  const editingCategory =
+    editingCategoryId != null
+      ? categoryListData.find((c) => c.id === editingCategoryId)
+      : undefined;
 
   const [categoryCreateMutation, categoryCreateState] = useMutation<
     {
@@ -350,22 +359,13 @@ export default function CategoriesPage() {
               onDeleteClick={(id) => setDeletingCategoryId(id)}
             />
           ))}
-          {editingCategoryId != null && (
+          {editingCategory != null && (
             <CategoryUpdateAction
-              id={editingCategoryId}
-              name={
-                categoryListData.find((c) => c.id === editingCategoryId)?.name
-              }
-              description={
-                categoryListData.find((c) => c.id === editingCategoryId)
-                  ?.description
-              }
-              icon={
-                categoryListData.find((c) => c.id === editingCategoryId)?.icon
-              }
-              color={
-                categoryListData.find((c) => c.id === editingCategoryId)?.color
-              }
+              id={editingCategory.id}
+              name={editingCategory.name}
+              description={editingCategory.description}
+              icon={editingCategory.icon}
+              color={editingCategory.color}
               refetch={categoryListQuery.refetch}
               open={true}
               onOpenChange={(isOpen) => {

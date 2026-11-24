@@ -63,29 +63,31 @@ const allCategoriesQuery = gql`
   }
 `;
 
-const categoryList = {
-  data: {
-    allCategoriesList: {
-      __typename: 'CategoryConnection',
-      edges: [
-        {
-          __typename: 'Category',
-          id: CATEGORY_ID,
-          name: 'Transport',
-          description: 'Getting around',
-          icon: 'car',
-          color: '#3b82f6',
-          space: { __typename: 'Space', id: SPACE_ID, name: 'Home' },
-        },
-      ],
-    },
+function buildCategoryList(
+  appearance: { icon: string | null; color: string | null } = {
+    icon: 'car',
+    color: '#3b82f6',
   },
-};
-
-const categoryListMocks = [
-  { request: { query: allCategoriesQuery }, result: categoryList },
-  { request: { query: allCategoriesQuery }, result: categoryList },
-];
+) {
+  return {
+    data: {
+      allCategoriesList: {
+        __typename: 'CategoryConnection',
+        edges: [
+          {
+            __typename: 'Category',
+            id: CATEGORY_ID,
+            name: 'Transport',
+            description: 'Getting around',
+            icon: appearance.icon,
+            color: appearance.color,
+            space: { __typename: 'Space', id: SPACE_ID, name: 'Home' },
+          },
+        ],
+      },
+    },
+  };
+}
 
 const createMutation = gql`
   mutation CategoryCreateMutation($input: CategoryCreateInput!) {
@@ -111,7 +113,16 @@ const updateMutation = gql`
   }
 `;
 
-function renderPage(mutationMock: unknown) {
+function renderPage(
+  mutationMock: unknown,
+  appearance?: { icon: string | null; color: string | null },
+) {
+  const categoryList = buildCategoryList(appearance);
+  const categoryListMocks = [
+    { request: { query: allCategoriesQuery }, result: categoryList },
+    { request: { query: allCategoriesQuery }, result: categoryList },
+  ];
+
   render(
     <MockedProvider
       // biome-ignore lint/suspicious/noExplicitAny: mock shapes are loose
@@ -291,4 +302,59 @@ describe('CategoriesPage pickers', () => {
 
     await waitFor(() => expect(result).toHaveBeenCalled());
   });
+
+  it.each([
+    { label: 'null', icon: null, color: null },
+    { label: 'unknown', icon: 'not-an-icon', color: '#000000' },
+  ])(
+    'shows the default icon and color and saves null for $label stored icon and color',
+    async (appearance) => {
+      const result = vi.fn(() => ({
+        data: {
+          categoryUpdate: {
+            __typename: 'Category',
+            id: CATEGORY_ID,
+            name: 'Transport',
+            description: 'Getting around',
+            icon: null,
+            color: null,
+          },
+        },
+      }));
+      renderPage(
+        {
+          request: {
+            query: updateMutation,
+            variables: {
+              input: {
+                id: CATEGORY_ID,
+                name: 'Transport',
+                description: 'Getting around',
+                icon: null,
+                color: null,
+              },
+            },
+          },
+          result,
+        },
+        appearance,
+      );
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+      const dialog = await screen.findByRole('dialog');
+
+      expect(
+        pressed(within(dialog).getByRole('group', { name: 'Icon' })),
+      ).toEqual(['category']);
+      expect(
+        pressed(within(dialog).getByRole('group', { name: 'Color' })),
+      ).toEqual(['Grey']);
+
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'Update category' }),
+      );
+
+      await waitFor(() => expect(result).toHaveBeenCalled());
+    },
+  );
 });

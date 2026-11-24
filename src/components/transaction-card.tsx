@@ -117,8 +117,8 @@ export function TransactionCard({
       >
         <div className="flex items-center gap-3 pointer-events-none">
           <CategoryIcon
-            icon={transaction.category?.icon ?? null}
-            color={transaction.category?.color ?? null}
+            icon={transaction.category?.icon}
+            color={transaction.category?.color}
           />
           <div className="flex flex-1 min-w-0 justify-between items-start">
             <div className="flex flex-col gap-1">

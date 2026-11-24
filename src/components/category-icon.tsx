@@ -108,8 +108,8 @@ export function CategoryIcon({
   size = 40,
   className,
 }: {
-  icon?: string | null;
-  color?: string | null;
+  icon?: string | null | undefined;
+  color?: string | null | undefined;
   size?: number;
   className?: string;
 }) {

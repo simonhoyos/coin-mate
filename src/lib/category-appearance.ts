@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const CATEGORY_ICON_KEYS = [
   'category',
   'shopping-cart',
@@ -90,3 +92,6 @@ export function resolveCategoryAppearance(args: {
     color: isCategoryColor(args.color) ? args.color : DEFAULT_CATEGORY_COLOR,
   };
 }
+
+export const CategoryIconSchema = z.string().refine(isCategoryIconKey);
+export const CategoryColorSchema = z.string().refine(isCategoryColor);

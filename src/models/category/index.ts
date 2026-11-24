@@ -2,7 +2,10 @@ import { addMonths, set } from 'date-fns';
 import { isEmpty, isUndefined, omitBy, pick } from 'lodash';
 import { z } from 'zod';
 import { assertNotNull } from '@/lib/assert';
-import { isCategoryColor, isCategoryIconKey } from '@/lib/category-appearance';
+import {
+  CategoryColorSchema,
+  CategoryIconSchema,
+} from '@/lib/category-appearance';
 import { createLoader } from '@/lib/dataloader';
 import { getObjectDiff } from '@/lib/diff';
 import type { IContext } from '@/lib/types';
@@ -253,8 +256,8 @@ const CategoryCreateSchema = z.object({
     .max(32)
     .transform((val) => val.toLowerCase()),
   description: z.string().max(256).optional(),
-  icon: z.string().refine(isCategoryIconKey).nullish(),
-  color: z.string().refine(isCategoryColor).nullish(),
+  icon: CategoryIconSchema.nullish(),
+  color: CategoryColorSchema.nullish(),
   space_id: z.uuid(),
 });
 
@@ -267,8 +270,8 @@ const CategoryUpdateSchema = z.object({
     .transform((val) => val.toLowerCase())
     .optional(),
   description: z.string().max(256).optional(),
-  icon: z.string().refine(isCategoryIconKey).nullish(),
-  color: z.string().refine(isCategoryColor).nullish(),
+  icon: CategoryIconSchema.nullish(),
+  color: CategoryColorSchema.nullish(),
 });
 
 const CategoryDeleteSchema = z.object({

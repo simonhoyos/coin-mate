@@ -100,10 +100,7 @@ export function CategoryCard({
         }}
       >
         <div className="flex items-center gap-3 pointer-events-none">
-          <CategoryIcon
-            icon={category.icon ?? null}
-            color={category.color ?? null}
-          />
+          <CategoryIcon icon={category.icon} color={category.color} />
           <div className="flex flex-1 min-w-0 flex-col gap-2">
             <h2 className="font-bold capitalize">{category.name}</h2>
             {(category.description ?? '') !== '' && (
