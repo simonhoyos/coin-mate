@@ -174,6 +174,8 @@ export class Category {
       },
     );
 
+    getCategoryById.clear({ context: args.context, id: parsedData.id });
+
     return {
       category: trxResult.category,
     };

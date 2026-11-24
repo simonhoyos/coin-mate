@@ -94,6 +94,81 @@ describe('Category GraphQL type extension (integration)', () => {
     ).toBe('#3b82f6');
   });
 
+  it('exposes the updated icon and color in the same request context as the mutation', async () => {
+    const { user, space } = await setup();
+
+    const category = assertNotNull(
+      await createCategory(context.services.knex, {
+        user_id: user.id,
+        space_id: space.id,
+      }),
+    );
+
+    const requestContext = context.login(user);
+
+    const updated = await resolvers.Mutation.categoryUpdate(
+      null as never,
+      {
+        input: {
+          id: category.id,
+          name: 'Renamed',
+          icon: 'car',
+          color: '#3b82f6',
+        },
+      },
+      requestContext,
+    );
+
+    const parent = { id: assertNotNull(updated.id) };
+
+    expect(
+      await resolvers.Category.icon(parent, null as never, requestContext),
+    ).toBe('car');
+    expect(
+      await resolvers.Category.color(parent, null as never, requestContext),
+    ).toBe('#3b82f6');
+  });
+
+  it('rejects an invalid icon or color on create and update', async () => {
+    const { user, space } = await setup();
+
+    const category = assertNotNull(
+      await createCategory(context.services.knex, {
+        user_id: user.id,
+        space_id: space.id,
+      }),
+    );
+
+    await expect(
+      resolvers.Mutation.categoryCreate(
+        null as never,
+        { input: { name: 'Bad', space_id: space.id, icon: 'not-an-icon' } },
+        context.login(user),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      resolvers.Mutation.categoryCreate(
+        null as never,
+        { input: { name: 'Bad', space_id: space.id, color: 'red' } },
+        context.login(user),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      resolvers.Mutation.categoryUpdate(
+        null as never,
+        { input: { id: category.id, name: 'Bad', icon: 'not-an-icon' } },
+        context.login(user),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      resolvers.Mutation.categoryUpdate(
+        null as never,
+        { input: { id: category.id, name: 'Bad', color: 'red' } },
+        context.login(user),
+      ),
+    ).rejects.toThrow();
+  });
+
   it('returns null icon and color for a category without appearance', async () => {
     const { user, space } = await setup();
 

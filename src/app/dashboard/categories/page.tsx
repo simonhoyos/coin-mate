@@ -6,11 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogDescription } from '@radix-ui/react-dialog';
 import { IconCirclePlus, IconFolderCode } from '@tabler/icons-react';
 import React from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { CategoryAppearanceFields } from '@/components/category-appearance-fields';
 import { CategoryCard } from '@/components/category-card';
-import { CategoryColorPicker } from '@/components/category-color-picker';
-import { CategoryIconPicker } from '@/components/category-icon-picker';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -189,15 +188,6 @@ export default function CategoriesPage() {
     categoryCreateForm.getValues,
   ]);
 
-  const createIcon = useWatch({
-    control: categoryCreateForm.control,
-    name: 'icon',
-  });
-  const createColor = useWatch({
-    control: categoryCreateForm.control,
-    name: 'color',
-  });
-
   async function categoryCreateSubmit(
     data: z.infer<typeof CategoryCreateFormSchema>,
   ) {
@@ -275,35 +265,9 @@ export default function CategoriesPage() {
                     </Field>
                   )}
                 />
-                <Controller
-                  name="icon"
+                <CategoryAppearanceFields
                   control={categoryCreateForm.control}
-                  render={({ field }) => (
-                    <Field>
-                      <FieldLabel id="icon-label">Icon</FieldLabel>
-                      <CategoryIconPicker
-                        aria-labelledby="icon-label"
-                        value={field.value}
-                        color={createColor}
-                        onChange={field.onChange}
-                      />
-                    </Field>
-                  )}
-                />
-                <Controller
-                  name="color"
-                  control={categoryCreateForm.control}
-                  render={({ field }) => (
-                    <Field>
-                      <FieldLabel id="color-label">Color</FieldLabel>
-                      <CategoryColorPicker
-                        aria-labelledby="color-label"
-                        value={field.value}
-                        icon={createIcon}
-                        onChange={field.onChange}
-                      />
-                    </Field>
-                  )}
+                  idPrefix="create"
                 />
                 <Controller
                   name="space_id"
@@ -476,8 +440,8 @@ function CategoryUpdateAction(props: {
       id: props.id,
       name: props.name ?? '',
       description: props.description ?? '',
-      icon: props.icon ?? null,
-      color: props.color ?? null,
+      icon: isCategoryIconKey(props.icon) ? props.icon : null,
+      color: isCategoryColor(props.color) ? props.color : null,
     }),
     [props.id, props.name, props.description, props.icon, props.color],
   );
@@ -486,15 +450,6 @@ function CategoryUpdateAction(props: {
     resolver: zodResolver(CategoryUpdateFormSchema),
     mode: 'onBlur',
     defaultValues: categoryUpdateDefaultValues,
-  });
-
-  const updateIcon = useWatch({
-    control: categoryUpdateForm.control,
-    name: 'icon',
-  });
-  const updateColor = useWatch({
-    control: categoryUpdateForm.control,
-    name: 'color',
   });
 
   async function categoryUpdateSubmit(
@@ -564,35 +519,9 @@ function CategoryUpdateAction(props: {
                 </Field>
               )}
             />
-            <Controller
-              name="icon"
+            <CategoryAppearanceFields
               control={categoryUpdateForm.control}
-              render={({ field }) => (
-                <Field>
-                  <FieldLabel id="icon-label">Icon</FieldLabel>
-                  <CategoryIconPicker
-                    aria-labelledby="icon-label"
-                    value={field.value}
-                    color={updateColor}
-                    onChange={field.onChange}
-                  />
-                </Field>
-              )}
-            />
-            <Controller
-              name="color"
-              control={categoryUpdateForm.control}
-              render={({ field }) => (
-                <Field>
-                  <FieldLabel id="color-label">Color</FieldLabel>
-                  <CategoryColorPicker
-                    aria-labelledby="color-label"
-                    value={field.value}
-                    icon={updateIcon}
-                    onChange={field.onChange}
-                  />
-                </Field>
-              )}
+              idPrefix="update"
             />
             <Field>
               <div className="flex flex-1 gap-2">
